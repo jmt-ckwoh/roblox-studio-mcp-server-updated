@@ -1,265 +1,300 @@
 # Roblox Studio MCP Server
 
-A Model Context Protocol (MCP) server implementation for Roblox Studio, built with TypeScript.
+Roblox Studio를 위한 Model Context Protocol(MCP) 서버 구현체로, TypeScript로 작성되었습니다.
 
-## Overview
+## 개요
 
-This MCP server provides resources, tools, and prompts specifically designed for Roblox Studio development. It enables LLM applications to access Roblox Studio documentation, templates, code generation capabilities, and other features through a standardized interface.
+이 MCP 서버는 Roblox Studio 개발을 위해 특별히 설계된 리소스, 도구 및 프롬프트를 제공합니다. LLM 애플리케이션이 표준화된 인터페이스를 통해 Roblox Studio 문서, 템플릿, 코드 생성 기능 및 기타 기능에 액세스할 수 있게 합니다.
 
-## Features
+## 특징
 
-- **Resources**: Access Roblox Studio documentation, API references, and code templates
-- **Tools**: Generate and validate Luau code, find assets, and create game components
-- **Prompts**: Use specialized prompts for script generation, bug finding, and performance optimization
-- **API Integration**: Connect directly to the Roblox API and Open Cloud API
-- **Interactive Systems**: Create dialogue systems, UI interfaces, and complex gameplay mechanics
-- **Enhanced Performance**: Built-in caching and rate limiting for optimal performance
-- **Robust Error Handling**: Comprehensive error management and graceful failure recovery
-- **Metrics & Monitoring**: Built-in health checks and performance metrics
+- **리소스**: Roblox Studio 문서, API 참조 및 코드 템플릿 접근
+- **도구**: Luau 코드 생성 및 검증, 에셋 검색, 게임 컴포넌트 생성
+- **프롬프트**: 스크립트 생성, 버그 찾기, 성능 최적화를 위한 특수 프롬프트
+- **API 통합**: Roblox API 및 Open Cloud API와 직접 연결
+- **대화형 시스템**: 대화 시스템, UI 인터페이스 및 복잡한 게임 플레이 메커니즘 생성
+- **향상된 성능**: 최적의 성능을 위한 내장 캐싱 및 속도 제한
+- **견고한 오류 처리**: 포괄적인 오류 관리 및 정상적인 오류 복구
+- **메트릭 및 모니터링**: 내장된 상태 확인 및 성능 메트릭
 
-## Prerequisites
+## 사전 요구 사항
 
 - Node.js >= 18.x
-- npm or yarn
-- Roblox API key (for API integration features)
-- Roblox Open Cloud API key (for Open Cloud features)
+- npm 또는 yarn
+- Roblox API 키 (API 통합 기능용)
+- Roblox Open Cloud API 키 (Open Cloud 기능용)
 
-## Installation
+## 설치
 
-1. Clone the repository
+1. 저장소 복제
 ```bash
 git clone https://github.com/dmae97/roblox-studio-mcp-server.git
 cd roblox-studio-mcp-server
 ```
 
-2. Install dependencies
+2. 의존성 설치
 ```bash
 npm install
 ```
 
-3. Create a `.env` file based on `.env.example`
+3. `.env.example`을 기반으로 `.env` 파일 생성
 ```bash
 cp .env.example .env
 ```
 
-4. Update the `.env` file with your Roblox API key and other configurations
+4. Roblox API 키 및 기타 구성으로 `.env` 파일 업데이트
 ```
 ROBLOX_API_KEY=your_api_key_here
 ROBLOX_OPEN_CLOUD_API_KEY=your_open_cloud_api_key_here
 ROBLOX_OPEN_CLOUD_UNIVERSE_ID=your_universe_id_here
 ```
 
-5. Build the project
+5. 프로젝트 빌드
 ```bash
 npm run build
 ```
 
-## Running the Server
+## 서버 실행
 
-Start the server in development mode:
+개발 모드에서 서버 시작:
 ```bash
 npm run dev
 ```
 
-Or start the production server:
+또는 프로덕션 서버 시작:
 ```bash
 npm start
 ```
 
-The server will start on port 3000 by default (configurable in `.env`).
+서버는 기본적으로 포트 3000에서 시작됩니다(`.env`에서 구성 가능).
 
-## Configuration Options
+## Docker 실행 (향후 지원 예정)
 
-The server can be configured using environment variables in the `.env` file:
+Docker를 사용하여 서버를 실행할 수도 있습니다:
 
-### Server Configuration
-- `PORT` - Port to run the server on (default: 3000)
-- `SERVER_NAME` - Name of the server (default: "Roblox Studio MCP Server")
-- `SERVER_VERSION` - Server version (default: "1.0.0")
-- `NODE_ENV` - Environment (development/production)
+```bash
+# 이미지 빌드
+docker build -t roblox-studio-mcp-server .
 
-### Logging Configuration
-- `DEBUG` - Enable debug mode (true/false)
-- `LOG_LEVEL` - Logging level (info, warn, error, debug)
-- `LOG_TIMESTAMP` - Include timestamps in logs (true/false)
-- `LOG_COLOR` - Colorize log output (true/false)
+# 컨테이너 실행
+docker run -p 3000:3000 -v .env:/app/.env roblox-studio-mcp-server
+```
 
-### Performance Settings
-- `ENABLE_RATE_LIMITING` - Enable rate limiting (true/false)
-- `RATE_LIMIT_WINDOW` - Time window in milliseconds for rate limiting
-- `RATE_LIMIT_MAX_REQUESTS` - Maximum requests per window
-- `CACHE_TTL` - Time to live in seconds for cached data
-- `CACHE_CHECK_PERIOD` - Check for expired cache items every X seconds
+또는 docker-compose 사용:
 
-### Security Settings
-- `CORS_ORIGINS` - Comma-separated list of allowed origins, or * for all
-- `JWT_SECRET` - Secret for JWT token verification
+```bash
+docker-compose up
+```
 
-## API Endpoints
+## 구성 옵션
 
-- `GET /sse` - Server-Sent Events endpoint for MCP communication
-- `POST /messages` - Message endpoint for MCP communication
-- `GET /health` - Health check endpoint
-- `GET /metrics` - Server metrics endpoint
+서버는 `.env` 파일의 환경 변수를 사용하여 구성할 수 있습니다:
 
-## Resources
+### 서버 구성
+- `PORT` - 서버를 실행할 포트 (기본값: 3000)
+- `SERVER_NAME` - 서버 이름 (기본값: "Roblox Studio MCP Server")
+- `SERVER_VERSION` - 서버 버전 (기본값: "1.0.0")
+- `NODE_ENV` - 환경 (development/production)
 
-### Documentation
+### 로깅 구성
+- `DEBUG` - 디버그 모드 활성화 (true/false)
+- `LOG_LEVEL` - 로깅 수준 (info, warn, error, debug)
+- `LOG_TIMESTAMP` - 로그에 타임스탬프 포함 (true/false)
+- `LOG_COLOR` - 로그 출력 색상화 (true/false)
 
-- `docs://api/{section}` - Access Roblox Studio API documentation
-- `docs://api` - List available documentation sections
-- `docs://luau` - Luau language documentation and best practices
-- `docs://services/{service}` - Documentation for specific Roblox services
+### 성능 설정
+- `ENABLE_RATE_LIMITING` - 속도 제한 활성화 (true/false)
+- `RATE_LIMIT_WINDOW` - 속도 제한을 위한 시간 창(밀리초)
+- `RATE_LIMIT_MAX_REQUESTS` - 창당 최대 요청 수
+- `CACHE_TTL` - 캐시된 데이터의 유효 시간(초)
+- `CACHE_CHECK_PERIOD` - 만료된 캐시 항목 확인 간격(초)
 
-### Templates
+### 보안 설정
+- `CORS_ORIGINS` - 허용된 오리진의 쉼표로 구분된 목록, 또는 모두 허용하기 위한 *
+- `JWT_SECRET` - JWT 토큰 검증을 위한 비밀 키
 
-- `template://roblox/{category}/{name}` - Access code templates
-- `template://roblox` - List available templates
-- `template://ui/{component}` - UI component templates using Roblox UI
+## API 엔드포인트
 
-## Tools
+- `GET /sse` - MCP 통신을 위한 Server-Sent Events 엔드포인트
+- `POST /messages` - MCP 통신을 위한 메시지 엔드포인트
+- `GET /health` - 상태 확인 엔드포인트
+- `GET /metrics` - 서버 메트릭 엔드포인트
 
-### Code Generator
+## 리소스
 
-The `generate-roblox-code` tool generates Roblox Luau code based on user specifications.
+### 문서
 
-Parameters:
-- `scriptType`: Type of script to generate (ServerScript, LocalScript, ModuleScript)
-- `functionality`: Description of what the script should do
-- `includeComments`: Whether to include comments in the code
-- `targetRobloxVersion`: (Optional) Target Roblox version
+- `docs://api/{section}` - Roblox Studio API 문서 접근
+- `docs://api` - 사용 가능한 문서 섹션 나열
+- `docs://luau` - Luau 언어 문서 및 모범 사례
+- `docs://services/{service}` - 특정 Roblox 서비스에 대한 문서
 
-### Asset Finder
+### 템플릿
 
-The `find-roblox-assets` tool finds Roblox assets based on user criteria.
+- `template://roblox/{category}/{name}` - 코드 템플릿 접근
+- `template://roblox` - 사용 가능한 템플릿 나열
+- `template://ui/{component}` - Roblox UI를 사용한 UI 컴포넌트 템플릿
 
-Parameters:
-- `assetType`: Type of asset to find (Model, Decal, Mesh, Animation, Sound, Texture)
-- `keywords`: Search keywords or tags
-- `maxResults`: Maximum number of results to return
-- `includeDetails`: Whether to include detailed asset information
+## 도구
 
-### Script Validator
+### 코드 생성기
 
-The `validate-roblox-script` tool validates Luau scripts for syntax errors and best practices.
+`generate-roblox-code` 도구는 사용자 사양에 따라 Roblox Luau 코드를 생성합니다.
 
-Parameters:
-- `scriptContent`: The Luau script content to validate
-- `scriptType`: Type of script (ServerScript, LocalScript, ModuleScript)
-- `checkBestPractices`: Whether to check for best practices
-- `checkPerformance`: Whether to check for performance issues
+매개변수:
+- `scriptType`: 생성할 스크립트 유형 (ServerScript, LocalScript, ModuleScript)
+- `functionality`: 스크립트가 수행해야 할 작업에 대한 설명
+- `includeComments`: 코드에 주석을 포함할지 여부
+- `targetRobloxVersion`: (선택 사항) 대상 Roblox 버전
 
-### New Tools
+### 에셋 검색기
 
-#### Data Store Manager
+`find-roblox-assets` 도구는 사용자 기준에 따라 Roblox 에셋을 검색합니다.
 
-The `create-datastore-system` tool generates complete DataStore code for persistent data management.
+매개변수:
+- `assetType`: 검색할 에셋 유형 (Model, Decal, Mesh, Animation, Sound, Texture)
+- `keywords`: 검색 키워드 또는 태그
+- `maxResults`: 반환할 최대 결과 수
+- `includeDetails`: 상세한 에셋 정보를 포함할지 여부
 
-Parameters:
-- `datastoreName`: Name of the DataStore
-- `dataStructure`: Structure of the data to be stored
-- `sessionCaching`: Whether to include session caching logic
-- `backupStrategy`: Data backup strategy
-- `playerData`: Whether this is for player data
+### 스크립트 검증기
 
-#### Physics System Generator
+`validate-roblox-script` 도구는 구문 오류 및 모범 사례에 대해 Luau 스크립트를 검증합니다.
 
-The `create-physics-system` tool generates physics-based systems for Roblox.
+매개변수:
+- `scriptContent`: 검증할 Luau 스크립트 내용
+- `scriptType`: 스크립트 유형 (ServerScript, LocalScript, ModuleScript)
+- `checkBestPractices`: 모범 사례 확인 여부
+- `checkPerformance`: 성능 문제 확인 여부
 
-Parameters:
-- `objectName`: Name of the physical object
-- `objectType`: Type of physical object
-- `size`: Size dimensions
-- `material`: Material type
-- `physicsProperties`: Density, friction, etc.
-- `constraints`: Optional physical constraints
+### 새로운 도구
 
-#### UI Builder
+#### 데이터 저장소 관리자
 
-The `create-ui-system` tool generates Roblox UI code.
+`create-datastore-system` 도구는 지속적인 데이터 관리를 위한 완전한 DataStore 코드를 생성합니다.
 
-Parameters:
-- `uiType`: Type of UI (Menu, HUD, Dialog, Inventory)
-- `elements`: UI elements to include
-- `responsive`: Whether the UI should be responsive
-- `stylePreset`: Visual style preset to use
+매개변수:
+- `datastoreName`: DataStore 이름
+- `dataStructure`: 저장할 데이터의 구조
+- `sessionCaching`: 세션 캐싱 로직을 포함할지 여부
+- `backupStrategy`: 데이터 백업 전략
+- `playerData`: 플레이어 데이터인지 여부
 
-### Roblox API Connectors
+#### 물리 시스템 생성기
 
-Tools for directly connecting to the Roblox API:
+`create-physics-system` 도구는 Roblox용 물리 기반 시스템을 생성합니다.
 
-#### Search Assets API
+매개변수:
+- `objectName`: 물리적 객체의 이름
+- `objectType`: 물리적 객체 유형
+- `size`: 크기 치수
+- `material`: 재질 유형
+- `physicsProperties`: 밀도, 마찰 등
+- `constraints`: 선택적 물리적 제약 조건
 
-The `roblox-search-assets` tool searches for assets using the official Roblox API.
+#### UI 빌더
 
-#### Open Cloud Integration
+`create-ui-system` 도구는 Roblox UI 코드를 생성합니다.
 
-The `roblox-open-cloud` tool provides access to Roblox Open Cloud API features.
+매개변수:
+- `uiType`: UI 유형 (Menu, HUD, Dialog, Inventory)
+- `elements`: 포함할 UI 요소
+- `responsive`: UI가 반응형이어야 하는지 여부
+- `stylePreset`: 사용할 시각적 스타일 프리셋
 
-Parameters:
-- `feature`: Open Cloud feature to use
-- `universeId`: Universe ID to operate on
-- `actionType`: Type of action to perform
-- `data`: Data for the action
+### Roblox API 커넥터
 
-## Prompts
+Roblox API에 직접 연결하기 위한 도구:
 
-### Script Generator
+#### 에셋 검색 API
 
-The `generate-script` prompt helps generate Roblox scripts with AI assistance.
+`roblox-search-assets` 도구는 공식 Roblox API를 사용하여 에셋을 검색합니다.
 
-Parameters:
-- `scriptType`: Type of script to generate
-- `functionality`: Description of what the script should do
-- `includeComments`: Whether to include comments in the code
-- `complexity`: Complexity level (Beginner, Intermediate, Advanced)
-- `targetAudience`: Target audience (Child, Teen, Adult)
+#### Open Cloud 통합
 
-### Bug Finder
+`roblox-open-cloud` 도구는 Roblox Open Cloud API 기능에 대한 액세스를 제공합니다.
 
-The `find-bugs` prompt analyzes scripts for bugs and suggests improvements.
+매개변수:
+- `feature`: 사용할 Open Cloud 기능
+- `universeId`: 작업할 Universe ID
+- `actionType`: 수행할 작업 유형
+- `data`: 작업에 대한 데이터
 
-Parameters:
-- `scriptContent`: The Luau script content to analyze
-- `scriptType`: Type of script
-- `checkPerformance`: Whether to check for performance issues
-- `checkSecurity`: Whether to check for security issues
-- `suggestImprovements`: Whether to suggest improvements
+## 프롬프트
 
-### Performance Optimizer
+### 스크립트 생성기
 
-The `optimize-performance` prompt analyzes and optimizes Roblox scripts for better performance.
+`generate-script` 프롬프트는 AI 지원으로 Roblox 스크립트를 생성하는 데 도움이 됩니다.
 
-Parameters:
-- `scriptContent`: The script to optimize
-- `targetFPS`: Target frames per second
-- `optimizationLevel`: Level of optimization to apply
-- `preserveReadability`: Whether to prioritize readability
+매개변수:
+- `scriptType`: 생성할 스크립트 유형
+- `functionality`: 스크립트가 수행해야 할 작업에 대한 설명
+- `includeComments`: 코드에 주석을 포함할지 여부
+- `complexity`: 복잡성 수준 (Beginner, Intermediate, Advanced)
+- `targetAudience`: 대상 청중 (Child, Teen, Adult)
 
-## Development
+### 버그 검색기
 
-### Project Structure
+`find-bugs` 프롬프트는 버그를 분석하고 개선 사항을 제안합니다.
 
-- `src/index.ts` - Main server file
-- `src/utils/` - Utility functions
-- `src/middleware/` - Express middleware for error handling, rate limiting, etc.
-- `src/tools/` - MCP tools implementation
-- `src/resources/` - MCP resources implementation
-- `src/prompts/` - MCP prompts implementation
-- `src/api/` - Roblox API client implementation
-- `src/tools/interactive/` - Interactive systems and UI tools
-- `src/tools/physics/` - Physics system tools
-- `src/tools/datastore/` - DataStore management tools
-- `src/tools/opencloud/` - Open Cloud API integration
+매개변수:
+- `scriptContent`: 분석할 Luau 스크립트 내용
+- `scriptType`: 스크립트 유형
+- `checkPerformance`: 성능 문제 확인 여부
+- `checkSecurity`: 보안 문제 확인 여부
+- `suggestImprovements`: 개선 사항 제안 여부
 
-### MCP Integration Examples
+### 성능 최적화기
 
-Here are examples of how to use this MCP server with various LLM applications:
+`optimize-performance` 프롬프트는 더 나은 성능을 위해 Roblox 스크립트를 분석하고 최적화합니다.
 
-#### Example 1: Using the API with Claude
+매개변수:
+- `scriptContent`: 최적화할 스크립트
+- `targetFPS`: 대상 초당 프레임 수
+- `optimizationLevel`: 적용할 최적화 수준
+- `preserveReadability`: 가독성을 우선시할지 여부
+
+## 개발
+
+### 프로젝트 구조
+
+- `src/index.ts` - 메인 서버 파일
+- `src/utils/` - 유틸리티 함수
+- `src/middleware/` - 오류 처리, 속도 제한 등을 위한 Express 미들웨어
+- `src/tools/` - MCP 도구 구현
+- `src/resources/` - MCP 리소스 구현
+- `src/prompts/` - MCP 프롬프트 구현
+- `src/api/` - Roblox API 클라이언트 구현
+- `src/tools/interactive/` - 대화형 시스템 및 UI 도구
+- `src/tools/physics/` - 물리 시스템 도구
+- `src/tools/datastore/` - DataStore 관리 도구
+- `src/tools/opencloud/` - Open Cloud API 통합
+
+### 테스트 (향후 지원 예정)
+
+단위 테스트 실행:
+```bash
+npm test
+```
+
+통합 테스트 실행:
+```bash
+npm run test:integration
+```
+
+전체 테스트 커버리지 보고서 생성:
+```bash
+npm run test:coverage
+```
+
+### MCP 통합 예제
+
+다양한 LLM 애플리케이션에서 이 MCP 서버를 사용하는 방법에 대한 예제:
+
+#### 예제 1: Claude와 API 사용
 
 ```javascript
-// Example code for calling the MCP server from a web application using Claude
+// Claude를 사용하여 웹 애플리케이션에서 MCP 서버를 호출하는 예제 코드
 async function callRobloxMcp() {
   const response = await fetch('https://your-claude-api-endpoint/messages', {
     method: 'POST',
@@ -272,7 +307,7 @@ async function callRobloxMcp() {
       messages: [
         {
           role: "user",
-          content: "Can you help me create a platformer game in Roblox Studio?"
+          content: "Roblox Studio에서 플랫포머 게임을 만드는 데 도움을 주시겠어요?"
         }
       ],
       tool_choice: "auto",
@@ -280,21 +315,21 @@ async function callRobloxMcp() {
         {
           function: {
             name: "mcp",
-            description: "Call the Roblox Studio MCP server",
+            description: "Roblox Studio MCP 서버 호출",
             parameters: {
               type: "object",
               properties: {
                 server_url: {
                   type: "string",
-                  description: "URL of the MCP server"
+                  description: "MCP 서버의 URL"
                 },
                 tool_name: {
                   type: "string",
-                  description: "Name of the MCP tool to call"
+                  description: "호출할 MCP 도구의 이름"
                 },
                 tool_parameters: {
                   type: "object",
-                  description: "Parameters for the MCP tool"
+                  description: "MCP 도구에 대한 매개변수"
                 }
               },
               required: ["server_url", "tool_name"]
@@ -309,45 +344,45 @@ async function callRobloxMcp() {
 }
 ```
 
-#### Example 2: Using MCP Server as a CLI Tool
+#### 예제 2: CLI 도구로 MCP 서버 사용
 
-You can also use the MCP server through command-line:
+또한 명령줄을 통해 MCP 서버를 사용할 수도 있습니다:
 
 ```bash
-# Install MCP client CLI
+# MCP 클라이언트 CLI 설치
 npm install -g @modelcontextprotocol/cli
 
-# Connect to your MCP server
+# MCP 서버에 연결
 mcp connect http://localhost:3000
 
-# Use MCP tools
-mcp tool generate-roblox-code --scriptType=ServerScript --functionality="Handle player movement" --includeComments=true
+# MCP 도구 사용
+mcp tool generate-roblox-code --scriptType=ServerScript --functionality="플레이어 이동 처리" --includeComments=true
 
-# Access templates
+# 템플릿 접근
 mcp resource template://roblox/game/platformer
 ```
 
-#### Example 3: Connecting with Anthropic's Claude
+#### 예제 3: Anthropic의 Claude와 연결
 
 ```python
 import anthropic
 from anthropic.tool_use import MCP
 
-# Initialize Claude client
+# Claude 클라이언트 초기화
 client = anthropic.Client(api_key="your-anthropic-api-key")
 
-# Create MCP connection
+# MCP 연결 생성
 mcp = MCP(server_url="http://localhost:3000")
 
-# Send message to Claude with MCP capabilities
+# MCP 기능을 갖춘 Claude에 메시지 보내기
 response = client.messages.create(
     model="claude-3.7-sonnet-20250219",
     max_tokens=1000,
-    system="You are a helpful AI assistant with access to Roblox Studio MCP server.",
+    system="당신은 Roblox Studio MCP 서버에 접근할 수 있는 도움이 되는 AI 어시스턴트입니다.",
     messages=[
         {
             "role": "user",
-            "content": "I want to create a multiplayer game in Roblox Studio. What tools should I use?"
+            "content": "Roblox Studio에서 멀티플레이어 게임을 만들고 싶어요. 어떤 도구를 사용해야 할까요?"
         }
     ],
     tools=[mcp.to_tool()]
@@ -356,29 +391,49 @@ response = client.messages.create(
 print(response.content)
 ```
 
-### Scripts
+### 스크립트
 
-- `npm run build` - Build the project
-- `npm run dev` - Run in development mode with hot reload
-- `npm start` - Run the production server
-- `npm run lint` - Run linting
-- `npm test` - Run tests
+- `npm run build` - 프로젝트 빌드
+- `npm run dev` - 핫 리로드가 있는 개발 모드에서 실행
+- `npm start` - 프로덕션 서버 실행
+- `npm run lint` - 린팅 실행
+- `npm test` - 테스트 실행
 
-## Recent Updates
+## 트러블슈팅
 
-- Added improved error handling with custom middleware
-- Enhanced logging system with configurable levels and formatting
-- Implemented caching system for improved performance
-- Added rate limiting to protect against abuse
-- Expanded metrics endpoint for better monitoring
-- Added graceful shutdown handling
-- Updated to latest Roblox API endpoints
-- Fixed naming inconsistencies (Roblex → Roblox)
+### 일반적인 문제
 
-## Contributing
+1. **연결 오류**: Roblox API 키가 올바르게 구성되었는지 확인하세요.
+2. **메모리 사용량 높음**: 캐시 TTL 설정을 조정하여 메모리 사용량을 관리하세요.
+3. **속도 제한 오류**: `RATE_LIMIT_*` 설정을 환경에 맞게 조정하세요.
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+### 로깅
 
-## License
+문제를 디버깅하려면 `LOG_LEVEL=debug`로 설정하여 자세한 로깅을 활성화하세요.
+
+## 최근 업데이트
+
+- 사용자 정의 미들웨어로 오류 처리 개선
+- 구성 가능한 수준 및 포맷팅으로 로깅 시스템 향상
+- 성능 향상을 위한 캐싱 시스템 구현
+- 악용 방지를 위한 속도 제한 추가
+- 더 나은 모니터링을 위한 메트릭 엔드포인트 확장
+- 정상 종료 처리 추가
+- 최신 Roblox API 엔드포인트로 업데이트
+- 이름 불일치 수정 (Roblex → Roblox)
+
+## 향후 계획된 기능
+
+- **JWT 인증**: 보안 강화를 위한
+- **API 문서화**: OpenAPI/Swagger 통합
+- **Docker 지원**: 쉬운 배포를 위한 컨테이너화
+- **테스트 수트**: 전체 유닛 및 통합 테스트
+- **CI/CD 파이프라인**: 자동화된 테스트 및 배포
+
+## 기여
+
+기여를 환영합니다! 자유롭게 Pull Request를 제출해 주세요.
+
+## 라이선스
 
 MIT
