@@ -7,6 +7,7 @@ import { robloxTools } from './tools/index.js';
 import { robloxResources } from './resources/index.js';
 import { robloxPrompts } from './prompts/index.js';
 import { logger } from './utils/logger.js';
+import { errorHandler, notFound, ApiError } from './middleware/errorHandler.js';
 
 // Load environment variables
 dotenv.config();
@@ -16,6 +17,7 @@ const PORT = process.env.PORT || 3000;
 const SERVER_NAME = process.env.SERVER_NAME || 'Roblox Studio MCP Server';
 const SERVER_VERSION = process.env.SERVER_VERSION || '1.0.0';
 const DEBUG = process.env.DEBUG === 'true';
+const NODE_ENV = process.env.NODE_ENV || 'development';
 
 // Create MCP Server
 const server = new McpServer({
@@ -30,8 +32,31 @@ robloxPrompts.register(server);
 
 // Create Express app
 const app = express();
-app.use(cors());
+
+// Middleware
+app.use(cors({
+  origin: process.env.CORS_ORIGINS === '*' ? '*' : process.env.CORS_ORIGINS?.split(','),
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(express.json());
+
+// Add request logging middleware
+app.use((req, res, next) => {
+  const start = Date.now();
+  
+  // Log when the response is finished
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    const logLevel = res.statusCode >= 400 ? 'warn' : 'info';
+    
+    logger[logLevel](
+      `${req.method} ${req.originalUrl} ${res.statusCode} ${duration}ms`
+    );
+  });
+  
+  next();
+});
 
 // Storage for active transports
 const transports: { [sessionId: string]: SSEServerTransport } = {};
@@ -51,46 +76,52 @@ const metrics = {
 };
 
 // SSE endpoint
-app.get('/sse', async (req, res) => {
-  const transport = new SSEServerTransport('/messages', res);
-  transports[transport.sessionId] = transport;
-  
-  // Update metrics
-  metrics.connections.total += 1;
-  metrics.connections.active = Object.keys(transports).length;
-  
-  logger.info(`New SSE connection established: ${transport.sessionId}`);
-  
-  res.on('close', () => {
-    logger.info(`SSE connection closed: ${transport.sessionId}`);
-    delete transports[transport.sessionId];
+app.get('/sse', async (req, res, next) => {
+  try {
+    const transport = new SSEServerTransport('/messages', res);
+    transports[transport.sessionId] = transport;
+    
+    // Update metrics
+    metrics.connections.total += 1;
     metrics.connections.active = Object.keys(transports).length;
-  });
-  
-  await server.connect(transport);
+    
+    logger.info(`New SSE connection established: ${transport.sessionId}`);
+    
+    res.on('close', () => {
+      logger.info(`SSE connection closed: ${transport.sessionId}`);
+      delete transports[transport.sessionId];
+      metrics.connections.active = Object.keys(transports).length;
+    });
+    
+    await server.connect(transport);
+  } catch (error) {
+    next(error);
+  }
 });
 
 // Messages endpoint
-app.post('/messages', async (req, res) => {
-  const sessionId = req.query.sessionId as string;
-  const transport = transports[sessionId];
-  
-  // Update metrics
-  metrics.requests.total += 1;
-  
-  if (transport) {
-    try {
+app.post('/messages', async (req, res, next) => {
+  try {
+    const sessionId = req.query.sessionId as string;
+    
+    if (!sessionId) {
+      throw new ApiError('Missing sessionId parameter', 400);
+    }
+    
+    const transport = transports[sessionId];
+    
+    // Update metrics
+    metrics.requests.total += 1;
+    
+    if (transport) {
       await transport.handlePostMessage(req, res);
       metrics.requests.success += 1;
-    } catch (error) {
+    } else {
       metrics.requests.error += 1;
-      logger.error(`Error handling message: ${error}`);
-      res.status(500).send('Internal server error');
+      throw new ApiError(`No transport found for sessionId: ${sessionId}`, 400);
     }
-  } else {
-    metrics.requests.error += 1;
-    logger.error(`No transport found for sessionId: ${sessionId}`);
-    res.status(400).send('No transport found for sessionId');
+  } catch (error) {
+    next(error);
   }
 });
 
@@ -100,6 +131,7 @@ app.get('/health', (_, res) => {
     status: 'ok',
     name: SERVER_NAME,
     version: SERVER_VERSION,
+    environment: NODE_ENV,
     activeSessions: Object.keys(transports).length
   });
 });
@@ -109,11 +141,24 @@ app.get('/metrics', (_, res) => {
   const uptime = Math.floor((new Date().getTime() - metrics.startTime.getTime()) / 1000);
   
   res.status(200).json({
-    ...metrics,
-    uptime: uptime,
-    uptime_formatted: formatUptime(uptime)
+    server: {
+      name: SERVER_NAME,
+      version: SERVER_VERSION,
+      environment: NODE_ENV,
+      uptime: uptime,
+      uptime_formatted: formatUptime(uptime)
+    },
+    metrics: {
+      connections: metrics.connections,
+      requests: metrics.requests,
+      memory: process.memoryUsage()
+    }
   });
 });
+
+// Add error handling middleware
+app.use(notFound);
+app.use(errorHandler);
 
 // Format uptime helper
 function formatUptime(seconds: number): string {
@@ -129,7 +174,8 @@ function formatUptime(seconds: number): string {
 
 // Start server
 app.listen(PORT, () => {
-  logger.info(`${SERVER_NAME} running on port ${PORT}`);
+  logger.info(`${SERVER_NAME} v${SERVER_VERSION} running on port ${PORT}`);
+  logger.info(`Environment: ${NODE_ENV}`);
   if (DEBUG) {
     logger.info('Debug mode enabled');
   }
@@ -139,4 +185,18 @@ app.listen(PORT, () => {
 process.on('SIGINT', () => {
   logger.info('Server shutting down...');
   process.exit(0);
+});
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (error) => {
+  logger.critical('Uncaught exception', error);
+  // Give the logger time to log the error before exiting
+  setTimeout(() => {
+    process.exit(1);
+  }, 1000);
+});
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (reason) => {
+  logger.critical('Unhandled promise rejection', reason instanceof Error ? reason : new Error(String(reason)));
 });
