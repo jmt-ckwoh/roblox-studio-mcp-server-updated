@@ -8,6 +8,8 @@ import { robloxResources } from './resources/index.js';
 import { robloxPrompts } from './prompts/index.js';
 import { logger } from './utils/logger.js';
 import { errorHandler, notFound, ApiError } from './middleware/errorHandler.js';
+import { rateLimiter } from './middleware/rateLimiter.js';
+import { cache } from './utils/cache.js';
 
 // Load environment variables
 dotenv.config();
@@ -18,6 +20,7 @@ const SERVER_NAME = process.env.SERVER_NAME || 'Roblox Studio MCP Server';
 const SERVER_VERSION = process.env.SERVER_VERSION || '1.0.0';
 const DEBUG = process.env.DEBUG === 'true';
 const NODE_ENV = process.env.NODE_ENV || 'development';
+const ENABLE_RATE_LIMITING = process.env.ENABLE_RATE_LIMITING !== 'false';
 
 // Create MCP Server
 const server = new McpServer({
@@ -57,6 +60,12 @@ app.use((req, res, next) => {
   
   next();
 });
+
+// Apply rate limiting if enabled
+if (ENABLE_RATE_LIMITING) {
+  logger.info('Rate limiting enabled');
+  app.use(rateLimiter);
+}
 
 // Storage for active transports
 const transports: { [sessionId: string]: SSEServerTransport } = {};
@@ -151,7 +160,11 @@ app.get('/metrics', (_, res) => {
     metrics: {
       connections: metrics.connections,
       requests: metrics.requests,
-      memory: process.memoryUsage()
+      memory: process.memoryUsage(),
+      cache: {
+        stats: cache.stats(),
+        keys: cache.keys().length
+      }
     }
   });
 });
@@ -173,7 +186,7 @@ function formatUptime(seconds: number): string {
 }
 
 // Start server
-app.listen(PORT, () => {
+const server_instance = app.listen(PORT, () => {
   logger.info(`${SERVER_NAME} v${SERVER_VERSION} running on port ${PORT}`);
   logger.info(`Environment: ${NODE_ENV}`);
   if (DEBUG) {
@@ -181,11 +194,26 @@ app.listen(PORT, () => {
   }
 });
 
-// Handle process exit
-process.on('SIGINT', () => {
-  logger.info('Server shutting down...');
-  process.exit(0);
-});
+// Enable graceful shutdown
+process.on('SIGINT', gracefulShutdown);
+process.on('SIGTERM', gracefulShutdown);
+
+// Graceful shutdown function
+function gracefulShutdown() {
+  logger.info('Server shutting down gracefully...');
+  
+  // Close server
+  server_instance.close(() => {
+    logger.info('Server closed');
+    process.exit(0);
+  });
+  
+  // If server doesn't close in 10 seconds, force exit
+  setTimeout(() => {
+    logger.error('Server shutdown timed out, forcing exit');
+    process.exit(1);
+  }, 10000);
+}
 
 // Handle uncaught exceptions
 process.on('uncaughtException', (error) => {
