@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import dotenv from 'dotenv';
@@ -10,6 +11,7 @@ import { logger } from './utils/logger.js';
 import { errorHandler, notFound, ApiError } from './middleware/errorHandler.js';
 import { rateLimiter } from './middleware/rateLimiter.js';
 import { cache } from './utils/cache.js';
+import { AuthRoutes } from './auth/auth.routes.js';
 
 // Load environment variables
 dotenv.config();
@@ -37,6 +39,7 @@ robloxPrompts.register(server);
 const app = express();
 
 // Middleware
+app.use(helmet()); // Adds various HTTP security headers
 app.use(cors({
   origin: process.env.CORS_ORIGINS === '*' ? '*' : process.env.CORS_ORIGINS?.split(','),
   methods: ['GET', 'POST', 'OPTIONS'],
@@ -133,6 +136,9 @@ app.post('/messages', async (req, res, next) => {
     next(error);
   }
 });
+
+// Authentication routes
+app.use('/auth', new AuthRoutes().getRouter());
 
 // Health check endpoint
 app.get('/health', (_, res) => {
