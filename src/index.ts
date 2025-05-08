@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import http from 'http';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import dotenv from 'dotenv';
@@ -9,9 +10,14 @@ import { robloxResources } from './resources/index.js';
 import { robloxPrompts } from './prompts/index.js';
 import { logger } from './utils/logger.js';
 import { errorHandler, notFound, ApiError } from './middleware/errorHandler.js';
-import { rateLimiter } from './middleware/rateLimiter.js';
+import { ApiRateLimiter } from './api/api-rate-limiter.js';
+import { validateEnvVars } from './middleware/security.js';
+import { ConnectionManager } from './connection/connection-manager.js';
+import { WebSocketHandler } from './api/websocket-handler.js';
+import { ApiVersionManager } from './api/version-manager.js';
 import { cache } from './utils/cache.js';
 import { AuthRoutes } from './auth/auth.routes.js';
+import { metricsMiddleware, getMetrics } from './middleware/metrics.js';
 
 // Load environment variables
 dotenv.config();
@@ -25,18 +31,38 @@ const NODE_ENV = process.env.NODE_ENV || 'development';
 const ENABLE_RATE_LIMITING = process.env.ENABLE_RATE_LIMITING !== 'false';
 
 // Create MCP Server
-const server = new McpServer({
+const mcpServer = new McpServer({
   name: SERVER_NAME,
   version: SERVER_VERSION
 });
 
 // Register tools, resources, and prompts
-robloxTools.register(server);
-robloxResources.register(server);
-robloxPrompts.register(server);
+robloxTools.register(mcpServer);
+robloxResources.register(mcpServer);
+robloxPrompts.register(mcpServer);
 
 // Create Express app
 const app = express();
+
+// Create HTTP server
+const server = http.createServer(app);
+
+// Create connection manager
+const connectionManager = new ConnectionManager();
+
+// Create WebSocket handler
+const wsHandler = new WebSocketHandler(server, mcpServer, connectionManager);
+
+// Create API version manager
+const apiVersionManager = new ApiVersionManager();
+
+// Register API version v1
+const v1Router = express.Router();
+v1Router.use('/auth', new AuthRoutes().getRouter());
+apiVersionManager.registerVersion({ version: 'v1', router: v1Router });
+
+// Set default API version
+apiVersionManager.setDefaultVersion('v1');
 
 // Middleware
 app.use(helmet()); // Adds various HTTP security headers
@@ -46,6 +72,8 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json());
+app.use(validateEnvVars);
+app.use(metricsMiddleware);
 
 // Add request logging middleware
 app.use((req, res, next) => {
@@ -67,45 +95,33 @@ app.use((req, res, next) => {
 // Apply rate limiting if enabled
 if (ENABLE_RATE_LIMITING) {
   logger.info('Rate limiting enabled');
-  app.use(rateLimiter);
+  
+  const apiRateLimiter = new ApiRateLimiter({
+    points: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100', 10),
+    duration: parseInt(process.env.RATE_LIMIT_WINDOW || '60000', 10) / 1000,
+    keyGenerator: (req) => req.ip || 'unknown',
+    skip: (req) => req.path === '/health' // Skip rate limiting for health checks
+  });
+  
+  app.use(apiRateLimiter.middleware());
 }
-
-// Storage for active transports
-const transports: { [sessionId: string]: SSEServerTransport } = {};
-
-// Simple metrics for monitoring
-const metrics = {
-  connections: {
-    total: 0,
-    active: 0,
-  },
-  requests: {
-    total: 0,
-    success: 0,
-    error: 0,
-  },
-  startTime: new Date(),
-};
 
 // SSE endpoint
 app.get('/sse', async (req, res, next) => {
   try {
     const transport = new SSEServerTransport('/messages', res);
-    transports[transport.sessionId] = transport;
     
-    // Update metrics
-    metrics.connections.total += 1;
-    metrics.connections.active = Object.keys(transports).length;
+    // Register with connection manager
+    connectionManager.registerConnection(transport.sessionId, transport);
     
     logger.info(`New SSE connection established: ${transport.sessionId}`);
     
     res.on('close', () => {
       logger.info(`SSE connection closed: ${transport.sessionId}`);
-      delete transports[transport.sessionId];
-      metrics.connections.active = Object.keys(transports).length;
+      connectionManager.unregisterConnection(transport.sessionId);
     });
     
-    await server.connect(transport);
+    await mcpServer.connect(transport);
   } catch (error) {
     next(error);
   }
@@ -120,16 +136,25 @@ app.post('/messages', async (req, res, next) => {
       throw new ApiError('Missing sessionId parameter', 400);
     }
     
-    const transport = transports[sessionId];
+    const transport = connectionManager.getConnection(sessionId);
     
-    // Update metrics
-    metrics.requests.total += 1;
+    // Update connection activity
+    connectionManager.updateActivity(sessionId);
+    
+    // Generate request ID for tracking
+    const requestId = `${sessionId}-${Date.now()}`;
+    connectionManager.startRequestTimer(requestId);
     
     if (transport) {
-      await transport.handlePostMessage(req, res);
-      metrics.requests.success += 1;
+      if (transport instanceof SSEServerTransport) {
+        await transport.handlePostMessage(req, res);
+      } else {
+        throw new ApiError('Invalid transport type for this endpoint', 400);
+      }
+      
+      // End request timer
+      connectionManager.endRequestTimer(requestId);
     } else {
-      metrics.requests.error += 1;
       throw new ApiError(`No transport found for sessionId: ${sessionId}`, 400);
     }
   } catch (error) {
@@ -137,8 +162,8 @@ app.post('/messages', async (req, res, next) => {
   }
 });
 
-// Authentication routes
-app.use('/auth', new AuthRoutes().getRouter());
+// API routes (with versioning)
+app.use('/api', apiVersionManager.createVersioningMiddleware());
 
 // Health check endpoint
 app.get('/health', (_, res) => {
@@ -147,30 +172,35 @@ app.get('/health', (_, res) => {
     name: SERVER_NAME,
     version: SERVER_VERSION,
     environment: NODE_ENV,
-    activeSessions: Object.keys(transports).length
+    connections: {
+      sse: connectionManager.getConnectionCount(),
+      websocket: wsHandler.getConnectionCount(),
+      total: connectionManager.getConnectionCount() + wsHandler.getConnectionCount()
+    }
   });
 });
 
 // Metrics endpoint
 app.get('/metrics', (_, res) => {
-  const uptime = Math.floor((new Date().getTime() - metrics.startTime.getTime()) / 1000);
+  const uptime = Math.floor(process.uptime());
   
   res.status(200).json({
     server: {
       name: SERVER_NAME,
       version: SERVER_VERSION,
       environment: NODE_ENV,
-      uptime: uptime,
+      uptime,
       uptime_formatted: formatUptime(uptime)
     },
-    metrics: {
-      connections: metrics.connections,
-      requests: metrics.requests,
+    connections: connectionManager.getStats(),
+    metrics: getMetrics(),
+    system: {
       memory: process.memoryUsage(),
-      cache: {
-        stats: cache.stats(),
-        keys: cache.keys().length
-      }
+      cpu: process.cpuUsage(),
+    },
+    cache: {
+      stats: cache.stats(),
+      keys: cache.keys().length
     }
   });
 });
@@ -188,16 +218,18 @@ function formatUptime(seconds: number): string {
   const minutes = Math.floor(seconds / 60);
   seconds -= minutes * 60;
   
-  return `${days}d ${hours}h ${minutes}m ${seconds}s`;
+  return `${days}d ${hours}h ${minutes}m ${Math.floor(seconds)}s`;
 }
 
 // Start server
-const server_instance = app.listen(PORT, () => {
+const serverInstance = server.listen(PORT, () => {
   logger.info(`${SERVER_NAME} v${SERVER_VERSION} running on port ${PORT}`);
   logger.info(`Environment: ${NODE_ENV}`);
   if (DEBUG) {
     logger.info('Debug mode enabled');
   }
+  logger.info(`WebSocket endpoint available at ws://localhost:${PORT}/ws`);
+  logger.info(`SSE endpoint available at http://localhost:${PORT}/sse`);
 });
 
 // Enable graceful shutdown
@@ -205,14 +237,35 @@ process.on('SIGINT', gracefulShutdown);
 process.on('SIGTERM', gracefulShutdown);
 
 // Graceful shutdown function
-function gracefulShutdown() {
+async function gracefulShutdown() {
   logger.info('Server shutting down gracefully...');
   
-  // Close server
-  server_instance.close(() => {
-    logger.info('Server closed');
+  try {
+    // Close WebSocket connections
+    await wsHandler.close();
+    logger.info('WebSocket server closed');
+    
+    // Clean up connection manager
+    connectionManager.cleanup();
+    logger.info('Connection manager cleaned up');
+    
+    // Close server
+    await new Promise<void>((resolve, reject) => {
+      serverInstance.close((err) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve();
+        }
+      });
+    });
+    
+    logger.info('HTTP server closed');
     process.exit(0);
-  });
+  } catch (error) {
+    logger.error(`Error during shutdown: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    process.exit(1);
+  }
   
   // If server doesn't close in 10 seconds, force exit
   setTimeout(() => {
