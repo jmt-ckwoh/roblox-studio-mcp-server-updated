@@ -1,60 +1,68 @@
 # Roblox Studio MCP Server
 
-Roblox Studio를 위한 Model Context Protocol(MCP) 서버 구현체로, TypeScript로 작성되었습니다.
+An implementation of the Model Context Protocol (MCP) server specifically designed for Roblox Studio, built with TypeScript.
 
-## 개요
+![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/dmae97/roblox-studio-mcp-server-updated/ci.yml?branch=main)
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
 
-이 MCP 서버는 Roblox Studio 개발을 위해 특별히 설계된 리소스, 도구 및 프롬프트를 제공합니다. LLM 애플리케이션이 표준화된 인터페이스를 통해 Roblox Studio 문서, 템플릿, 코드 생성 기능 및 기타 기능에 액세스할 수 있게 합니다.
+## Overview
 
-## 개선된 기능
+This MCP server provides specialized resources, tools, and prompts for Roblox Studio development. It allows LLM applications to access Roblox Studio documentation, templates, code generation capabilities, and other features through a standardized interface.
 
-- **인증 시스템**: JWT 기반 인증 및 권한 관리 시스템
-- **Docker 지원**: 손쉬운 배포 및 확장을 위한 Docker 및 Docker Compose 설정
-- **테스트 코드**: Jest를 사용한 단위 및 통합 테스트
-- **CI/CD 파이프라인**: GitHub Actions를 사용한 자동화된 테스트 및 배포
-- **보안 강화**: Helmet을 사용한 HTTP 헤더 보안 및 환경 변수 검증
-- **로깅 개선**: Winston을 사용한 구조화된 로깅 시스템
-- **모니터링**: 프로메테우스 및 그라파나 지원 (선택적)
-- **확장 가능한 아키텍처**: 모듈화된 디자인으로 쉬운 확장 가능
+## Enhanced Features
 
-## 특징
+- **JWT Authentication**: Secure JWT-based authentication with role-based access control
+- **Docker Support**: Easy deployment and scaling with Docker and Docker Compose
+- **Testing Framework**: Unit and integration tests using Jest
+- **CI/CD Pipeline**: Automated testing and deployment with GitHub Actions
+- **Security Enhancements**: HTTP header security with Helmet and environment variable validation
+- **Improved Logging**: Structured logging system using Winston
+- **Monitoring**: Prometheus and Grafana support (optional)
+- **Extensible Architecture**: Modular design for easy expansion
+- **WebSocket Support**: Alternative to SSE for better real-time communication
+- **Connection Management**: Robust connection tracking and health monitoring
+- **API Versioning**: Support for multiple API versions with graceful deprecation
+- **Advanced Rate Limiting**: Flexible rate limiting strategies for API protection
+- **Automatic Retries**: Configurable retry mechanisms for failed operations
 
-- **리소스**: Roblox Studio 문서, API 참조 및 코드 템플릿 접근
-- **도구**: Luau 코드 생성 및 검증, 에셋 검색, 게임 컴포넌트 생성
-- **프롬프트**: 스크립트 생성, 버그 찾기, 성능 최적화를 위한 특수 프롬프트
-- **API 통합**: Roblox API 및 Open Cloud API와 직접 연결
-- **대화형 시스템**: 대화 시스템, UI 인터페이스 및 복잡한 게임 플레이 메커니즘 생성
-- **향상된 성능**: 최적의 성능을 위한 내장 캐싱 및 속도 제한
-- **견고한 오류 처리**: 포괄적인 오류 관리 및 정상적인 오류 복구
-- **메트릭 및 모니터링**: 내장된 상태 확인 및 성능 메트릭
+## Features
 
-## 사전 요구 사항
+- **Resources**: Access to Roblox Studio documentation, API references, and code templates
+- **Tools**: Luau code generation and validation, asset search, game component creation
+- **Prompts**: Special prompts for script generation, bug finding, and performance optimization
+- **API Integration**: Direct connection to Roblox API and Open Cloud API
+- **Interactive Systems**: Creation of dialogue systems, UI interfaces, and complex gameplay mechanics
+- **Enhanced Performance**: Built-in caching and rate limiting for optimal performance
+- **Robust Error Handling**: Comprehensive error management and graceful recovery
+- **Metrics and Monitoring**: Built-in health checks and performance metrics
+
+## Prerequisites
 
 - Node.js >= 18.x
-- npm 또는 yarn
-- Docker 및 Docker Compose (선택 사항)
-- Roblox API 키 (API 통합 기능용)
-- Roblox Open Cloud API 키 (Open Cloud 기능용)
+- npm or yarn
+- Docker and Docker Compose (optional)
+- Roblox API key (for API integration features)
+- Roblox Open Cloud API key (for Open Cloud features)
 
-## 설치
+## Installation
 
-1. 저장소 복제
+1. Clone the repository
 ```bash
 git clone https://github.com/dmae97/roblox-studio-mcp-server-updated.git
 cd roblox-studio-mcp-server-updated
 ```
 
-2. 의존성 설치
+2. Install dependencies
 ```bash
 npm install
 ```
 
-3. `.env.example`을 기반으로 `.env` 파일 생성
+3. Create a `.env` file based on `.env.example`
 ```bash
 cp .env.example .env
 ```
 
-4. Roblox API 키 및 기타 구성으로 `.env` 파일 업데이트
+4. Update the `.env` file with your Roblox API keys and other configuration
 ```
 ROBLOX_API_KEY=your_api_key_here
 ROBLOX_OPEN_CLOUD_API_KEY=your_open_cloud_api_key_here
@@ -63,170 +71,275 @@ JWT_SECRET=your_jwt_secret_here
 JWT_REFRESH_SECRET=your_refresh_secret_here
 ```
 
-5. 프로젝트 빌드
+5. Build the project
 ```bash
 npm run build
 ```
 
-## 서버 실행
+## Running the Server
 
-개발 모드에서 서버 시작:
+Start the server in development mode:
 ```bash
 npm run dev
 ```
 
-또는 프로덕션 서버 시작:
+Or start the production server:
 ```bash
 npm start
 ```
 
-서버는 기본적으로 포트 3000에서 시작됩니다(`.env`에서 구성 가능).
+The server starts on port 3000 by default (configurable in `.env`).
 
-## Docker 실행
+## Docker Deployment
 
-Docker를 사용하여 서버를 실행할 수도 있습니다:
+You can also run the server using Docker:
 
 ```bash
-# 이미지 빌드
+# Build the image
 npm run docker:build
 
-# 컨테이너 실행
+# Run the container
 npm run docker:run
 ```
 
-또는 docker-compose 사용:
+Or using Docker Compose:
 
 ```bash
 docker-compose up -d
 ```
 
-## 테스트 실행
+## Running Tests
 
-단위 테스트 실행:
+Run unit tests:
 ```bash
 npm test
 ```
 
-테스트 커버리지 보고서 생성:
+Generate a test coverage report:
 ```bash
 npm run test:coverage
 ```
 
-통합 테스트 실행:
+Run integration tests:
 ```bash
 npm run test:integration
 ```
 
-## API 엔드포인트
+## API Endpoints
 
-### MCP 관련 엔드포인트
-- `GET /sse` - MCP 통신을 위한 Server-Sent Events 엔드포인트
-- `POST /messages` - MCP 통신을 위한 메시지 엔드포인트
-- `GET /health` - 서버 상태 확인 엔드포인트
-- `GET /metrics` - 서버 메트릭 엔드포인트
+### MCP-Related Endpoints
+- `GET /sse` - Server-Sent Events endpoint for MCP communication
+- `GET /ws` - WebSocket endpoint for MCP communication (alternative to SSE)
+- `POST /messages` - Message endpoint for MCP communication
+- `GET /health` - Server health check endpoint
+- `GET /metrics` - Server metrics endpoint
 
-### 인증 관련 엔드포인트
-- `POST /auth/login` - 사용자 로그인 및 토큰 발급
-- `POST /auth/refresh` - 리프레시 토큰으로 새 액세스 토큰 발급
-- `GET /auth/validate` - 토큰 유효성 확인
-- `GET /auth/admin` - 관리자 권한 확인 (관리자 전용)
+### Authentication Endpoints
+- `POST /auth/login` - User login and token issuance
+- `POST /auth/refresh` - Issue new access token using refresh token
+- `GET /auth/validate` - Validate token
+- `GET /auth/admin` - Admin privilege check (admin only)
 
-## 구성 옵션
+## Configuration Options
 
-서버는 `.env` 파일의 환경 변수를 사용하여 구성할 수 있습니다:
+The server can be configured using environment variables in the `.env` file:
 
-### 서버 구성
-- `PORT` - 서버를 실행할 포트 (기본값: 3000)
-- `SERVER_NAME` - 서버 이름 (기본값: "Roblox Studio MCP Server")
-- `SERVER_VERSION` - 서버 버전 (기본값: "1.0.0")
-- `NODE_ENV` - 환경 (development/production)
-- `DEBUG` - 디버그 모드 활성화 (true/false)
+### Server Configuration
+- `PORT` - Port to run the server on (default: 3000)
+- `SERVER_NAME` - Server name (default: "Roblox Studio MCP Server")
+- `SERVER_VERSION` - Server version (default: "1.0.0")
+- `NODE_ENV` - Environment (development/production)
+- `DEBUG` - Enable debug mode (true/false)
 
-### 로깅 구성
-- `LOG_LEVEL` - 로깅 수준 (info, warn, error, debug)
-- `LOG_TIMESTAMP` - 로그에 타임스탬프 포함 (true/false)
-- `LOG_COLOR` - 로그 출력 색상화 (true/false)
+### Logging Configuration
+- `LOG_LEVEL` - Logging level (info, warn, error, debug)
+- `LOG_TIMESTAMP` - Include timestamp in logs (true/false)
+- `LOG_COLOR` - Colorize log output (true/false)
 
-### 성능 설정
-- `ENABLE_RATE_LIMITING` - 속도 제한 활성화 (true/false)
-- `RATE_LIMIT_WINDOW` - 속도 제한을 위한 시간 창(밀리초)
-- `RATE_LIMIT_MAX_REQUESTS` - 창당 최대 요청 수
-- `CACHE_TTL` - 캐시된 데이터의 유효 시간(초)
-- `CACHE_CHECK_PERIOD` - 만료된 캐시 항목 확인 간격(초)
+### Performance Settings
+- `ENABLE_RATE_LIMITING` - Enable rate limiting (true/false)
+- `RATE_LIMIT_WINDOW` - Rate limit time window (milliseconds)
+- `RATE_LIMIT_MAX_REQUESTS` - Maximum requests per window
+- `CACHE_TTL` - Time to live for cached data (seconds)
+- `CACHE_CHECK_PERIOD` - Check interval for expired cache items (seconds)
 
-### 보안 설정
-- `CORS_ORIGINS` - 허용된 오리진의 쉼표로 구분된 목록, 또는 모두 허용하기 위한 *
-- `JWT_SECRET` - JWT 토큰 생성 및 검증을 위한 비밀 키
-- `JWT_EXPIRES_IN` - 토큰 만료 시간(초) (기본값: 1시간)
-- `JWT_REFRESH_SECRET` - JWT 리프레시 토큰 생성 및 검증을 위한 비밀 키
-- `JWT_REFRESH_EXPIRES_IN` - 리프레시 토큰 만료 시간(초) (기본값: 1주일)
+### Security Settings
+- `CORS_ORIGINS` - Comma-separated list of allowed origins, or * for all
+- `JWT_SECRET` - Secret key for JWT token generation and verification
+- `JWT_EXPIRES_IN` - Token expiry time in seconds (default: 1 hour)
+- `JWT_REFRESH_SECRET` - Secret key for JWT refresh token generation and verification
+- `JWT_REFRESH_EXPIRES_IN` - Refresh token expiry time in seconds (default: 1 week)
 
-## 리소스
+## Resources
 
-### 문서
+### Documentation
 
-- `docs://api/{section}` - Roblox Studio API 문서 접근
-- `docs://api` - 사용 가능한 문서 섹션 나열
-- `docs://luau` - Luau 언어 문서 및 모범 사례
-- `docs://services/{service}` - 특정 Roblox 서비스에 대한 문서
+- `docs://api/{section}` - Access Roblox Studio API documentation
+- `docs://api` - List available documentation sections
+- `docs://luau` - Luau language documentation and best practices
+- `docs://services/{service}` - Documentation for specific Roblox services
 
-### 템플릿
+### Templates
 
-- `template://roblox/{category}/{name}` - 코드 템플릿 접근
-- `template://roblox` - 사용 가능한 템플릿 나열
-- `template://ui/{component}` - Roblox UI를 사용한 UI 컴포넌트 템플릿
+- `template://roblox/{category}/{name}` - Access code templates
+- `template://roblox` - List available templates
+- `template://ui/{component}` - UI component templates using Roblox UI
 
-## 개발
+## Development
 
-### 프로젝트 구조
+### Project Structure
 
 ```
 .
-├── src/                    # 소스 코드
-│   ├── auth/              # 인증 관련 코드
-│   ├── middleware/        # Express 미들웨어
-│   ├── resources/         # MCP 리소스
-│   ├── tools/             # MCP 도구
-│   │   ├── datastore/     # DataStore 관련 도구
-│   │   ├── interactive/   # 대화형 시스템 도구
-│   │   ├── opencloud/     # Open Cloud 통합 도구
-│   │   └── physics/       # 물리 시스템 도구
-│   ├── prompts/           # MCP 프롬프트
-│   ├── tests/             # 테스트 코드
-│   ├── utils/             # 유틸리티 함수
-│   └── index.ts           # 애플리케이션 진입점
-├── prometheus/            # 프로메테우스 구성
-├── .env.example          # 환경 변수 예시
-├── Dockerfile            # Docker 빌드 정의
-├── docker-compose.yml    # Docker Compose 구성
-├── package.json          # 프로젝트 메타데이터 및 의존성
-├── tsconfig.json         # TypeScript 구성
-└── README.md             # 문서
+├── src/                    # Source code
+│   ├── api/                # API-related code
+│   ├── auth/               # Authentication code
+│   ├── connection/         # Connection management
+│   ├── middleware/         # Express middleware
+│   ├── resources/          # MCP resources
+│   ├── tools/              # MCP tools
+│   │   ├── datastore/      # DataStore tools
+│   │   ├── interactive/    # Interactive system tools
+│   │   ├── opencloud/      # Open Cloud integration tools
+│   │   └── physics/        # Physics system tools
+│   ├── prompts/            # MCP prompts
+│   ├── tests/              # Test code
+│   ├── utils/              # Utility functions
+│   └── index.ts            # Application entry point
+├── prometheus/             # Prometheus configuration
+├── .env.example           # Environment variable example
+├── Dockerfile             # Docker build definition
+├── docker-compose.yml     # Docker Compose configuration
+├── package.json           # Project metadata and dependencies
+├── tsconfig.json          # TypeScript configuration
+└── README.md              # Documentation
 ```
 
-## 기여
+## Connecting to the MCP Server
 
-기여를 환영합니다! 자유롭게 PR을 제출해 주세요.
+### Example 1: Using Claude with API
 
-1. 포크 생성
-2. 기능 브랜치 생성 (`git checkout -b feature/amazing-feature`)
-3. 변경 사항 커밋 (`git commit -m 'Add some amazing feature'`)
-4. 브랜치 푸시 (`git push origin feature/amazing-feature`)
-5. Pull Request 열기
+```javascript
+// Example code for calling the MCP server from a web application using Claude
+async function callRobloxMcp() {
+  const response = await fetch('https://your-claude-api-endpoint/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer your-claude-api-key'
+    },
+    body: JSON.stringify({
+      model: "claude-3.7-sonnet-20250219",
+      messages: [
+        {
+          role: "user",
+          content: "Help me create a platformer game in Roblox Studio"
+        }
+      ],
+      tool_choice: "auto",
+      tools: [
+        {
+          function: {
+            name: "mcp",
+            description: "Call the Roblox Studio MCP server",
+            parameters: {
+              type: "object",
+              properties: {
+                server_url: {
+                  type: "string",
+                  description: "URL of the MCP server"
+                },
+                tool_name: {
+                  type: "string",
+                  description: "Name of the MCP tool to call"
+                },
+                tool_parameters: {
+                  type: "object",
+                  description: "Parameters for the MCP tool"
+                }
+              },
+              required: ["server_url", "tool_name"]
+            }
+          }
+        }
+      ]
+    })
+  });
+  
+  return await response.json();
+}
+```
 
-## 트러블슈팅
+### Example 2: Using the MCP CLI Tool
 
-### 일반적인 문제
+You can also use the MCP server via the command line:
 
-1. **연결 오류**: Roblox API 키가 올바르게 구성되었는지 확인하세요.
-2. **인증 실패**: JWT 비밀 키가 올바르게 설정되었는지 확인하세요.
-3. **메모리 사용량 높음**: 캐시 TTL 설정을 조정하여 메모리 사용량을 관리하세요.
-4. **속도 제한 오류**: `RATE_LIMIT_*` 설정을 환경에 맞게 조정하세요.
+```bash
+# Install the MCP client CLI
+npm install -g @modelcontextprotocol/cli
 
-### 로깅
+# Connect to the MCP server
+mcp connect http://localhost:3000
 
-문제를 디버깅하려면 `LOG_LEVEL=debug`로 설정하여 자세한 로깅을 활성화하세요.
+# Use an MCP tool
+mcp tool generate-roblox-code --scriptType=ServerScript --functionality="Handle player movement" --includeComments=true
 
-## 라이선스
+# Access a template
+mcp resource template://roblox/game/platformer
+```
+
+### Example 3: Connecting with Anthropic's Claude
+
+```python
+import anthropic
+from anthropic.tool_use import MCP
+
+# Initialize Claude client
+client = anthropic.Client(api_key="your-anthropic-api-key")
+
+# Create MCP connection
+mcp = MCP(server_url="http://localhost:3000")
+
+# Send message to Claude with MCP capabilities
+response = client.messages.create(
+    model="claude-3.7-sonnet-20250219",
+    max_tokens=1000,
+    system="You are a helpful AI assistant with access to a Roblox Studio MCP server.",
+    messages=[
+        {
+            "role": "user",
+            "content": "I want to create a multiplayer game in Roblox Studio. What tools should I use?"
+        }
+    ],
+    tools=[mcp.to_tool()]
+)
+
+print(response.content)
+```
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Connection Errors**: Verify that your Roblox API key is correctly configured.
+2. **Authentication Failures**: Check that your JWT secret keys are properly set.
+3. **High Memory Usage**: Adjust Cache TTL settings to manage memory usage.
+4. **Rate Limit Errors**: Adjust `RATE_LIMIT_*` settings for your environment.
+
+### Logging
+
+Set `LOG_LEVEL=debug` to enable detailed logging for debugging issues.
+
+## Contributing
+
+Contributions are welcome! Feel free to submit a PR.
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## License
 
 MIT
