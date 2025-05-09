@@ -1,0 +1,1 @@
+# Roblox Studio MCP Server\n\n> 로블록스 스튜디오를 위한 모델 컨텍스트 프로토콜(MCP) 서버\n\n- TypeScript로 구현된 고성능 MCP 서버\n- WebSocket 및 SSE를 통한 실시간 통신\n- JWT 인증 및 강화된 보안 기능\n- 포괄적인 테스트 및 문서화\n\n[GitHub](https://github.com/dmae97/roblox-studio-mcp-server-updated)\n[시작하기](#roblox-studio-mcp-server)\n\n![color](#f0f8ff)
