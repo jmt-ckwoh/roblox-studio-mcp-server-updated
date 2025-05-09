@@ -22,7 +22,7 @@ const metrics = {
 /**
  * Middleware to collect request metrics
  */
-export const metricsMiddleware = (req: Request, res: Response, next: NextFunction) => {
+export const metricsMiddleware = (req: Request, res: Response, next: NextFunction): void => {
   const start = Date.now();
 
   // Increment request counter
@@ -109,7 +109,7 @@ export function getMetrics() {
 /**
  * Reset all metrics
  */
-export function resetMetrics() {
+export function resetMetrics(): void {
   metrics.counters.requests.total = 0;
   metrics.counters.requests.byMethod = {};
   metrics.counters.requests.byStatus = {};
