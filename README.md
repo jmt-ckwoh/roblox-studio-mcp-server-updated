@@ -1,11 +1,3 @@
-죄송합니다만, 기술적인 문제가 계속되고 있습니다. 우회 방법으로 curl을 사용하여 직접 README.md 파일 내용을 업데이트하겠습니다.github api update file content결과 10개How to create and update a file in a Github repository with PHP and Github API? - Stack Overflowstackoverflow.comREST API endpoints for repository contents - GitHub Docsgithub.comUpdate Github files through the REST APIstackoverflow.comGithub REST API update file with commit · GitHubgithub.comGitHub: Publish & Update Files · GitBookdata.worldEditing a File via the GitHub API v3 · GitHubgithub.comUpdating a file on github with the contents API · GitHubgithub.comHow to create or update file using Github content api - Stack Overflowstackoverflow.comCode Inside Blog | GitHub API: Create or update filescodeinside.euRepository files API | GitLab Docsgitlab.comGitHub API를 직접 호출하는 대신, 영어로 된 최신 README.md 파일을 작성해 제공해드리겠습니다. 이 내용을 복사하여 GitHub에 직접 업데이트하실 수 있습니다:
-markdown# Roblox Studio MCP Server
-
-An implementation of the Model Context Protocol (MCP) server specifically designed for Roblox Studio, built with TypeScript.
-
-![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/dmae97/roblox-studio-mcp-server-updated/ci.yml?branch=main)
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
-
 ## Overview
 
 This MCP server provides specialized resources, tools, and prompts for Roblox Studio development. It allows LLM applications to access Roblox Studio documentation, templates, code generation capabilities, and other features through a standardized interface.
