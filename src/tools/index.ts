@@ -3,6 +3,7 @@ import { codeGenerator } from './codeGenerator.js';
 import { assetFinder } from './assetFinder.js';
 import { scriptValidator } from './scriptValidator.js';
 import { robloxApiConnector } from './robloxApiConnector.js';
+import { studioIntegration } from './studioIntegration.js';
 import { datastoreManager } from './datastore/datastoreManager.js';
 import { uiBuilder } from './ui/uiBuilder.js';
 import { physicsSystem } from './physics/physicsSystem.js';
@@ -26,6 +27,7 @@ export const robloxTools = {
     assetFinder.register(server);
     scriptValidator.register(server);
     robloxApiConnector.register(server);
+    studioIntegration.register(server);
     
     // Register new tools
     datastoreManager.register(server);

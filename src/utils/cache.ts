@@ -56,7 +56,7 @@ export const cache = {
    * @returns True if the item was set successfully
    */
   set<T>(key: string, value: T, ttl?: number): boolean {
-    return cacheInstance.set(key, value, ttl);
+    return cacheInstance.set(key, value, ttl || CACHE_TTL);
   },
   
   /**

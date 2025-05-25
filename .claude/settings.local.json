@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install)",
+      "Bash(cat:*)",
+      "Bash(npm run build:*)",
+      "Bash(find:*)",
+      "Bash(mkdir:*)",
+      "Bash(curl:*)",
+      "Bash(pkill:*)",
+      "Bash(kill:*)"
+    ],
+    "deny": []
+  }
+}

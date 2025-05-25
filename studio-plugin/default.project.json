@@ -1,0 +1,10 @@
+{
+  "name": "MCPStudioPlugin",
+  "tree": {
+    "$path": "src/Main.server.luau",
+    "Tools": {
+      "$className": "Folder",
+      "$path": "src/Tools"
+    }
+  }
+}
