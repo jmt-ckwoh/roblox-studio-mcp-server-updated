@@ -67,7 +67,10 @@ end
 -- Tool handler function
 local function handleRunCode(args)
 	if not args or not args.command then
-		error("RunCode requires 'command' parameter")
+		return {
+			success = false,
+			error = "RunCode requires 'command' parameter"
+		}
 	end
 	
 	local command = args.command
@@ -78,10 +81,24 @@ local function handleRunCode(args)
 	
 	if success then
 		print("[MCP RunCode] Execution completed successfully")
-		return "✅ Code executed successfully:\n\n" .. output
+		return {
+			success = true,
+			result = {
+				message = "Code executed successfully",
+				output = output,
+				execution_time = tick()
+			}
+		}
 	else
 		warn("[MCP RunCode] Execution failed")
-		return "❌ Code execution failed:\n\n" .. output
+		return {
+			success = false,
+			error = "Code execution failed",
+			result = {
+				output = output,
+				execution_time = tick()
+			}
+		}
 	end
 end
 

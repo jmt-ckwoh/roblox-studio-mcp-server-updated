@@ -1,11 +1,22 @@
 # CLAUDE.md
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Session Management
+**SESSION STARTUP**: Read this full file once at session start
+**DURING SESSION**: Read mode-specific reminders regularly from `project-management/memory/session-reminder-*.md`
+- `session-reminder-core.md` - Core rules for all modes
+- `session-reminder-plan.md` - PLAN MODE specifics
+- `session-reminder-act.md` - ACT MODE specifics  
+- `session-reminder-debug.md` - DEBUG MODE specifics
+- `session-reminder-retro.md` - RETRO MODE specifics
+
+**REFRESH TRIGGERS**: Every 10-15 messages, after mode switches, when behavior drifts
+
 # Claude Behavior 
 **ALWAYS FOLLOW THESE RULES**
 ## Responses
 - **Succinct**: Clear, direct, no verbose explanations
-- **Professional**: No emojis under any circumstances
+- **Professional**: NO EMOJIS UNDER ANY CIRCUMSTANCES
 - **Peer Comms**: Trusted peer. Respectful pushback. Challenge assumptions.
 - **Strong Opinions**: Have strong opinions, open to change
 - **No Celebration**: Don't celebrate successes, just move to next task
@@ -17,7 +28,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **MANDATORY USE CASE VALIDATION**: Always validate scope against actual use case first
 - **MANDATORY SECURITY PLANNING**: Every plan must include security considerations appropriate to threat model
 - **SCOPE APPROPRIATENESS**: Match implementation complexity to actual requirements (personal ≠ enterprise)
-- Document plan → `current-plan.md` (sequenced phases + todos)
+- **ACT MODE COLLABORATION**: Provide exact implementation details (file locations, line numbers, complete code blocks)
+- **DEBUG MODE COLLABORATION**: Include comprehensive test matrices with specific scenarios and measurements
+- **IMPLEMENTATION SEQUENCING**: Phase broken tools fixes before new functionality to prevent cascade failures
+- **GO/NO-GO GATES**: Clear decision points between implementation phases with measurable criteria
+- **SELF-CONTAINED PLANNING**: Plans must work even with complete memory loss, relying only on CLAUDE.md + current-plan.md
+- Document plan → `project-management/current-plan.md` (sequenced phases + todos)
 - Log updates with accurate YYYY-MM-DD HH:MM from system
 
 ### ACT MODE
@@ -29,7 +45,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **QUALITY GATES**: Include code generation testing during implementation (NEW FROM M1.3)
 - **TEMPLATE VALIDATION**: Verify template literal syntax before completion (NEW FROM M1.3)
 - **ERROR HANDLING STANDARD**: Make comprehensive error handling mandatory for all generated code (NEW FROM M1.3)
-- Document progress → `current-implementation.md` (completed todos/phases)
+- Document progress → `project-management/current-implementation.md` (completed todos/phases)
 - Note failures/learnings during implementation
 - Kick to PLAN MODE if plan won't work or scope is inappropriate
 
@@ -41,18 +57,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **SCOPE VALIDATION**: Challenge completion claims against realistic criteria
 - **NO GOALPOST MOVEMENT**: Reject attempts to change criteria mid-validation
 - **USE CASE FOCUS**: Evaluate success based on intended use, not theoretical requirements
-- Document → `current-debug.md` (discoveries, attempts, learnings)
+- Document → `project-management/current-debug.md` (discoveries, attempts, learnings)
 
 ### RETRO MODE
 - **Continuous Improvement**: Integrate learnings into CLAUDE.md
 - **PROCESS EVOLUTION**: Update modes based on what we learned
 - Review all current-*.md files: what worked/failed, lessons, open questions
-- Rename current-*-YYYYMMDD_HHMM.md with shell timestamp → /logs/
+- Rename current-*-YYYYMMDD_HHMM.md with shell timestamp → project-management/logs/
 
 ## MEMORY
-Aggressively create .md files in /memory/ to prevent context loss
+Aggressively create .md files in project-management/memory/ to prevent context loss
 
-## CRITICAL LESSONS FROM M1.1, M1.2, M1.3 & ROBLOX MCP
+## CRITICAL LESSONS FROM M1.1, M1.2, M1.3, ROBLOX MCP, M1.4 & M1.5
 
 ### Security First (MANDATORY)
 - **ALWAYS implement input sanitization alongside functionality**
@@ -86,6 +102,15 @@ Aggressively create .md files in /memory/ to prevent context loss
 - **70%+ QUALITY THRESHOLD**: All generated code must meet minimum quality standards
 - **DEBUG-ACT IMPROVEMENT CYCLE**: Embrace DEBUG challenges as quality improvement opportunities
 
+### File Management & Studio Integration (FROM M1.4)
+- **PROGRESSIVE TESTING STRATEGY**: Layer validation prevents compound failures (tool → server → plugin → Studio)
+- **JSON RESPONSE HANDLING**: Always use HttpService:JSONEncode for table responses, never tostring(table)
+- **PROPERTY COMPATIBILITY**: Check object property availability before access (ModuleScript.Disabled fails)
+- **STUDIO UI BEHAVIOR**: Document expected Studio refresh patterns (script tabs need close/reopen)
+- **CHANGE HISTORY INTEGRATION**: Leverage Studio's undo/redo system for professional workflow
+- **PATH RESOLUTION STANDARDS**: Full paths work reliably, fuzzy search has limitations
+- **LIVE TESTING VALIDATION**: Always validate with actual Studio environment, not just mock responses
+
 ### Configuration & Integration Discipline (NEW FROM ROBLOX MCP)
 - **MANDATORY CONFIG VERIFICATION**: Before claiming anything works, verify ALL configuration matches between components
 - **PORT CONSISTENCY CHECK**: Always grep/search for ALL port references across entire codebase before testing
@@ -96,13 +121,27 @@ Aggressively create .md files in /memory/ to prevent context loss
 - **ENVIRONMENT PATH ISSUES**: WSL vs Windows path/executable availability must be checked before running commands
 - **REBUILD VERIFICATION**: After code changes, verify build actually completed and deployed before testing
 
+### Systemic Architecture Requirements (NEW FROM M1.5)
+- **MANDATORY SHARED CONFIGURATION**: ALL components MUST use shared configuration sources, NEVER hardcode values
+- **MANDATORY INTERFACE CONSOLIDATION**: Protocol interfaces MUST be defined once and imported everywhere
+- **MANDATORY RUNTIME VALIDATION**: All protocol boundaries MUST validate data format with type guards
+- **MANDATORY BUILD-TIME GENERATION**: Configuration values MUST be auto-generated to prevent drift
+- **SINGLE SOURCE OF TRUTH PRINCIPLE**: Any value used by multiple components MUST have exactly one definition
+- **ARCHITECTURAL PREVENTION OVER REACTIVE FIXES**: Design systems that make entire classes of bugs impossible
+
 ### Critical Mistake Patterns to NEVER Repeat
-1. **Port Mismatches**: Server on 44755, plugin expecting 3000 - ALWAYS cross-check ALL port references
-2. **Case Mismatches**: Server sends `get_workspace`, plugin expects `GetWorkspace` - ALWAYS verify naming across boundaries  
-3. **Field Mismatches**: Plugin sends `response`, server expects `result` - ALWAYS verify request/response schemas match
+1. **Port Mismatches**: Server on 44755, plugin expecting 3000 - SOLVED: Use shared configuration system
+2. **Case Mismatches**: Server sends `get_workspace`, plugin expects `GetWorkspace` - SOLVED: Consolidated toolNameMap
+3. **Field Mismatches**: Plugin sends `response`, server expects `result` - SOLVED: Shared interfaces with validation
 4. **Build Failures**: Code changed but plugin not rebuilt - ALWAYS verify build outputs exist and are recent
 5. **Environment Issues**: Rojo installed in Windows but running from WSL - ALWAYS check executable availability in current environment
 6. **Silent Failures**: Build scripts failing but appearing successful - ALWAYS check for actual file creation/modification
+7. **Hardcoded Values**: Configuration scattered across files - SOLVED: Centralized configuration with auto-generation
+8. **Interface Duplication**: Same types defined multiple times with drift - SOLVED: Single source of truth pattern
+9. **Missing Runtime Validation**: Protocol boundaries without type checking - SOLVED: Mandatory validation functions
+10. **Infrastructure Assumption Failures** (NEW FROM M1.5): Multiple server instances, port conflicts, WSL/Windows coordination issues - SOLVED: Mandatory infrastructure verification checklist
+11. **Double JSON Encoding** (NEW FROM M1.5): Plugin JSON responses encoded again by server - SOLVED: Parse plugin responses before re-encoding
+12. **Test Logic Trust** (NEW FROM M1.5): Assuming test failures indicate feature bugs - SOLVED: Independent validation with curl before debugging features
 
 # Development for Roblox MCP server
 ## Development Commands
@@ -202,23 +241,44 @@ The server supports MCP communication via:
 **Tool Testing**: Many tools use mock implementations for safety. Real Roblox API integration requires proper API keys and careful testing.
 
 ## Mandatory Workflow
-1. **PLAN**: Step-by-step todos → `current-plan.md` + security considerations
-2. **VALIDATE**: Compare to existing code, ensure minimal changes
-3. **CONFIG CHECK**: Verify ALL ports, naming conventions, field names match across components
-4. **ACT**: Implement exactly per plan → `current-implementation.md` + security first
-5. **BUILD VERIFY**: Confirm build outputs exist and are recent before testing
-6. **VALIDATE**: Test + critical code review + security testing
-7. **DEBUG**: Fix until tests pass → `current-debug.md` + ruthless validation
-8. **RETRO**: Extract learnings + update process
+1. **PLAN**: Step-by-step todos → `current-plan.md` + security considerations + architectural requirements
+2. **ARCHITECTURE CHECK**: Verify shared config/interfaces usage, no hardcoding policy compliance
+3. **VALIDATE**: Compare to existing code, ensure minimal changes
+4. **CONFIG CHECK**: Verify ALL configuration uses shared sources (M1.5 requirement)
+5. **ACT**: Implement exactly per plan → `current-implementation.md` + security first + architectural compliance
+6. **BUILD VERIFY**: Confirm build outputs exist and auto-generated configs are recent
+7. **VALIDATE**: Test + critical code review + security testing + runtime validation verification
+8. **DEBUG**: Fix until tests pass → `current-debug.md` + ruthless validation + architectural audit
+9. **RETRO**: Extract learnings + update process + architectural pattern documentation
 
 ## PRE-IMPLEMENTATION CHECKLIST (MANDATORY)
 Before writing ANY code that involves multiple components:
 
-### Configuration Consistency
-- [ ] **Port Audit**: `grep -r "port\|Port\|PORT" .` - verify all ports match
-- [ ] **URL Audit**: `grep -r "localhost\|127.0.0.1" .` - verify all URLs match
+### Infrastructure Verification (NEW FROM M1.5 - HIGHEST PRIORITY)
+- [ ] **Process State**: `ps aux | grep node` or `tasklist | grep node` - verify single instance
+- [ ] **Port Binding**: `netstat -tulpn | grep :3000` or `ss -tulpn | grep :3000` - confirm correct binding
+- [ ] **Multi-Environment Check**: Verify WSL/Windows coordination if applicable
+- [ ] **Basic Connectivity**: `curl http://localhost:3000/health` - test before complex operations
+- [ ] **Log Visibility**: Confirm server logs are visible and recent
+
+### Architectural Compliance (NEW FROM M1.5)
+- [ ] **Shared Config Usage**: All configuration values MUST import from `src/shared/studio-config.ts`
+- [ ] **Interface Consolidation**: All protocol types MUST import from `src/shared/studio-protocol.ts`
+- [ ] **No Hardcoding Policy**: Zero hardcoded ports, URLs, endpoints, or timeouts allowed
+- [ ] **Runtime Validation**: All protocol boundaries MUST use validation functions
+- [ ] **Build-Time Generation**: Any cross-component values MUST be auto-generated
+
+### Response Structure Validation (NEW FROM M1.5)
+- [ ] **Independent Testing**: Use curl to verify response structure before test harness
+- [ ] **JSON Encoding**: Verify single encoding, not double-encoded strings
+- [ ] **Type Consistency**: Response structure matches expected interface definitions
+- [ ] **Error Format**: Error responses follow standard format across all tools
+
+### Configuration Consistency (LEGACY - Use Shared Config Instead)
+- [ ] **Port Audit**: `grep -r "3000\|localhost" .` - should only find shared config files
+- [ ] **URL Audit**: All URLs should use `getServerUrl()` or generated config
 - [ ] **Naming Audit**: `grep -r "toolName\|tool_name\|ToolName" .` - verify naming conventions
-- [ ] **Field Audit**: `grep -r "response\|result\|data" .` - verify request/response field names
+- [ ] **Field Audit**: All interfaces should import from shared protocol definitions
 
 ### File & Build Verification  
 - [ ] **Output Paths**: Verify build output directories exist and are writable
@@ -270,6 +330,15 @@ Before writing ANY code that involves multiple components:
 2. **Validate Scope**: Does complexity match actual requirements?
 3. **Question Assumptions**: Are we overengineering for hypothetical needs?
 4. **Match Threat Model**: Security requirements appropriate to actual risks?
+
+### When Creating Implementation Plans (PLAN MODE):
+1. **ACT Mode Needs**: Exact file paths, line numbers, complete code blocks for copy-paste implementation
+2. **DEBUG Mode Needs**: Specific test scenarios, measurable criteria, baseline establishment requirements
+3. **Sequencing Logic**: Fix broken existing functionality before adding new features
+4. **Decision Gates**: Clear go/no-go criteria between phases with measurable success conditions
+5. **Self-Containment**: Plan must be executable with only CLAUDE.md and current-plan.md available
+6. **Implementation Detail Level**: 80+ line code blocks preferred over pseudocode for complex functionality
+7. **Architectural Requirements**: Specify shared config usage, interface consolidation, validation needs
 
 ### When Adding User Input Functionality:
 ```typescript
@@ -333,6 +402,36 @@ const timeout = getAppropriateTimeout(operationType);
 const code = `local ${serviceName} = game:GetService("${serviceName}")`;
 ```
 
+### When Creating New Servers or Components (NEW FROM M1.5):
+```typescript
+// MANDATORY: Use shared configuration and interfaces
+import { DEFAULT_STUDIO_CONFIG, validateConfig } from '../shared/studio-config.js';
+import { StudioResponse, StudioCommand, validateStudioResponse } from '../shared/studio-protocol.js';
+
+class NewServer {
+  private config = DEFAULT_STUDIO_CONFIG;
+  
+  constructor() {
+    validateConfig(this.config); // Fail fast on invalid config
+  }
+  
+  setupRoutes() {
+    // MANDATORY: Use config values, never hardcode
+    this.app.get(this.config.server.endpoints.health, (req, res) => {
+      res.json({ status: 'ok' });
+    });
+    
+    // MANDATORY: Validate at protocol boundaries
+    this.app.post(this.config.server.endpoints.response, (req, res) => {
+      if (!validateStudioResponse(req.body)) {
+        return res.status(400).json({ error: 'Invalid response format' });
+      }
+      const response: StudioResponse = req.body; // Type-safe after validation
+    });
+  }
+}
+```
+
 ### When Creating Tools That Return Data:
 ```markdown
 ## Tool Documentation Template:
@@ -362,10 +461,53 @@ const code = `local ${serviceName} = game:GetService("${serviceName}")`;
 4. **Tool Development**: Add new tools in `src/tools/` following the existing pattern
 5. **Registration**: Import and register new tools in `src/tools/index.ts`
 
+## Studio Integration Development (M1.4 + M1.5 Updates)
+
+### Plugin Tool Development
+1. **Luau Module**: Create tool in `studio-plugin/src/Tools/ToolName.luau`
+2. **JSON Response**: Always return structured data, use HttpService:JSONEncode for tables
+3. **Error Handling**: Use pcall for all operations, return success/error structure
+4. **Property Safety**: Check property existence before access (ModuleScript.Disabled)
+5. **Configuration Usage**: Import from `Config.luau` (auto-generated), never hardcode URLs/ports
+
+### Server Integration (UPDATED FOR M1.5)
+1. **Tool Registration**: Add snake_case tool name to server MCP handlers using shared interfaces
+2. **Name Mapping**: Update toolNameMap in http-only-server.ts for case conversion (centralized location)
+3. **Schema Definition**: Define input/output schemas matching Luau implementation and shared protocol
+4. **Response Processing**: Handle JSON responses from plugin with mandatory validation
+5. **Configuration Compliance**: Use shared config for all ports, endpoints, and timeouts
+6. **Interface Consolidation**: Import StudioResponse, StudioCommand from shared protocol definitions
+
+### Testing Protocol (MANDATORY)
+1. **Tool Implementation**: Verify Luau syntax and logic
+2. **Plugin Build**: `rojo build studio-plugin --output studio-plugin.rbxm`
+3. **Server Integration**: Verify tool registration and name mapping
+4. **Studio Testing**: Install plugin, test with actual Studio environment
+5. **Live Validation**: Confirm functionality with real Studio operations
+
 ## Key Files to Understand
 
+### Core Architecture (M1.5 CRITICAL)
+- `src/shared/studio-config.ts` - **SINGLE SOURCE OF TRUTH for all configuration**
+- `src/shared/studio-protocol.ts` - **SINGLE SOURCE OF TRUTH for all protocol interfaces**
+- `build-scripts/generate-plugin-config.ts` - Auto-generates plugin configuration from shared source
+
+### Server Implementation
 - `src/index.ts` - Main server setup and MCP registration
 - `src/tools/index.ts` - Central tool registry
 - `src/tools/codeGenerator.ts` - Example of fully implemented tool
 - `src/tools/studioIntegration.ts` - Studio-specific functionality
+- `src/studio-integration/studio-mcp-server.ts` - Studio MCP server using shared config/interfaces
+- `src/studio-integration/http-only-server.ts` - HTTP-only server using shared config/interfaces
+
+### Plugin Implementation
+- `studio-plugin/src/Config.luau` - **AUTO-GENERATED configuration (DO NOT EDIT MANUALLY)**
+- `studio-plugin/src/Main.server.luau` - Studio plugin main script using generated config
+- `studio-plugin/src/Tools/` - Individual Luau tool implementations
+- `studio-plugin/default.project.json` - Rojo build configuration
+
+### Build & Deployment
 - `package.json` - All available npm scripts and dependencies
+- Build process generates `studio-plugin/src/Config.luau` from TypeScript shared config
+
+# NO EMOJIS UNDER ANY CIRCUMSTANCES

@@ -2,6 +2,9 @@
   "name": "MCPStudioPlugin",
   "tree": {
     "$path": "src/Main.server.luau",
+    "Config": {
+      "$path": "src/Config.luau"
+    },
     "Tools": {
       "$className": "Folder",
       "$path": "src/Tools"

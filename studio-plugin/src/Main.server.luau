@@ -9,11 +9,12 @@ local RunService = game:GetService("RunService")
 local ChangeHistoryService = game:GetService("ChangeHistoryService")
 local StudioService = game:GetService("StudioService")
 
--- Server configuration
-local MCP_SERVER_URL = "http://localhost:3000"
-local REQUEST_ENDPOINT = "/request"
-local RESPONSE_ENDPOINT = "/response"
-local POLL_INTERVAL = 1 -- Poll every 1 second
+-- Server configuration (imported from auto-generated config)
+local Config = require(script.Config)
+local MCP_SERVER_URL = Config.SERVER_URL
+local REQUEST_ENDPOINT = Config.REQUEST_ENDPOINT
+local RESPONSE_ENDPOINT = Config.RESPONSE_ENDPOINT
+local POLL_INTERVAL = Config.POLL_INTERVAL
 
 -- Plugin state
 local isConnected = false
@@ -81,7 +82,7 @@ local function executeCommand(command)
 	-- Send response back to server
 	local responseData = {
 		id = commandId,
-		result = success and tostring(response) or "",
+		result = success and (typeof(response) == "table" and HttpService:JSONEncode(response) or tostring(response)) or "",
 		success = success,
 		error = success and nil or tostring(response)
 	}
@@ -145,7 +146,7 @@ local function connect()
 		print("[MCP] Studio plugin is ready for Claude prompts!")
 	else
 		warn("[MCP] Failed to connect to MCP Server:", result)
-		warn("[MCP] Make sure the TypeScript MCP server is running on port 44755")
+		warn("[MCP] Make sure the TypeScript MCP server is running on " .. Config.SERVER_URL)
 	end
 end
 
@@ -201,4 +202,9 @@ end
 setupPluginUI()
 
 print("[MCP] TypeScript MCP Studio Plugin loaded")
-print("[MCP] Available tools:", table.concat(script.Parent.Tools:GetChildren(), ", "))
+-- Get tool names for display
+local toolNames = {}
+for _, tool in ipairs(script.Tools:GetChildren()) do
+	table.insert(toolNames, tool.Name)
+end
+print("[MCP] Available tools:", table.concat(toolNames, ", "))

@@ -7,35 +7,21 @@ import express from 'express';
 import cors from 'cors';
 import { v4 as uuidv4 } from 'uuid';
 import { EventEmitter } from 'events';
+import { StudioCommand, StudioResponse, ResponseChannel, validateStudioResponse } from '../shared/studio-protocol.js';
+import { DEFAULT_STUDIO_CONFIG, validateConfig } from '../shared/studio-config.js';
 
-interface StudioCommand {
-  id: string;
-  tool: string;
-  args: any;
-  timestamp: number;
-}
-
-interface StudioResponse {
-  id: string;
-  success: boolean;
-  result?: string;
-  error?: string;
-}
-
-interface ResponseChannel {
-  resolve: (response: string) => void;
-  reject: (error: string) => void;
-  timeout: NodeJS.Timeout;
-}
+// Types imported from shared definitions - no local duplicates
 
 class HttpOnlyStudioServer {
   private app: express.Application;
   private commandQueue: StudioCommand[] = [];
   private responseChannels: Map<string, ResponseChannel> = new Map();
   private queueEmitter: EventEmitter = new EventEmitter();
-  private httpPort: number = 3000;
+  private config = DEFAULT_STUDIO_CONFIG;
   
   constructor() {
+    validateConfig(this.config);
+    
     this.app = express();
     this.setupExpress();
     this.setupRoutes();
@@ -54,7 +40,7 @@ class HttpOnlyStudioServer {
 
   private setupRoutes() {
     // Studio plugin polls this for commands
-    this.app.get('/request', async (req, res) => {
+    this.app.get(this.config.server.endpoints.request, async (req, res) => {
       try {
         if (this.commandQueue.length > 0) {
           const command = this.commandQueue.shift()!;
@@ -65,7 +51,7 @@ class HttpOnlyStudioServer {
           const timeout = setTimeout(() => {
             this.queueEmitter.removeAllListeners('newCommand');
             res.json(null);
-          }, 15000);
+          }, this.config.timeouts.pollTimeout);
 
           this.queueEmitter.once('newCommand', () => {
             clearTimeout(timeout);
@@ -85,7 +71,7 @@ class HttpOnlyStudioServer {
     });
 
     // Studio plugin sends responses here
-    this.app.post('/response', (req, res) => {
+    this.app.post(this.config.server.endpoints.response, (req, res) => {
       try {
         const response: StudioResponse = req.body;
         console.log(`📥 Received response from Studio: ${response.id}`);
@@ -96,7 +82,7 @@ class HttpOnlyStudioServer {
           this.responseChannels.delete(response.id);
           
           if (response.success) {
-            channel.resolve(response.result || 'Success');
+            channel.resolve(response.result || '');
           } else {
             channel.reject(response.error || 'Unknown error');
           }
@@ -116,7 +102,17 @@ class HttpOnlyStudioServer {
         console.log(`🔧 Testing tool: ${tool} with args:`, args);
         
         const result = await this.executeStudioCommand(tool, args);
-        res.json({ success: true, result });
+        
+        // Parse JSON response from Studio plugin to avoid double encoding
+        let parsedResult;
+        try {
+          parsedResult = JSON.parse(result);
+        } catch {
+          // If parsing fails, treat as plain string
+          parsedResult = result;
+        }
+        
+        res.json({ success: true, result: parsedResult });
       } catch (error) {
         console.error('Error testing tool:', error);
         res.status(500).json({ 
@@ -127,7 +123,7 @@ class HttpOnlyStudioServer {
     });
 
     // Health check
-    this.app.get('/health', (req, res) => {
+    this.app.get(this.config.server.endpoints.health, (req, res) => {
       res.json({ status: 'ok', timestamp: new Date().toISOString() });
     });
   }
@@ -136,11 +132,15 @@ class HttpOnlyStudioServer {
     // Map snake_case to PascalCase tool names
     const toolNameMap: Record<string, string> = {
       'get_workspace': 'GetWorkspace',
+      'get_workspace_files': 'GetWorkspaceFiles',
+      'get_file_content': 'GetFileContent',
+      'update_file_content': 'UpdateFileContent',
       'run_code': 'RunCode', 
       'create_part': 'CreatePart',
       'insert_model': 'InsertModel',
       'manage_datastore': 'ManageDatastore',
-      'create_gui': 'CreateGUI'
+      'create_gui': 'CreateGUI',
+      'get_console_output': 'GetConsoleOutput'
     };
     
     const studioToolName = toolNameMap[tool] || tool;
@@ -160,8 +160,8 @@ class HttpOnlyStudioServer {
     return new Promise<string>((resolve, reject) => {
       const timeout = setTimeout(() => {
         this.responseChannels.delete(commandId);
-        reject(new Error('Studio command timeout (30 seconds)'));
-      }, 30000);
+        reject(new Error(`Studio command timeout (${this.config.timeouts.commandTimeout}ms)`));
+      }, this.config.timeouts.commandTimeout);
 
       this.responseChannels.set(commandId, {
         resolve,
@@ -172,11 +172,11 @@ class HttpOnlyStudioServer {
   }
 
   start() {
-    const httpServer = this.app.listen(this.httpPort, '0.0.0.0', () => {
-      console.log(`🚀 HTTP-Only Studio Server running on port ${this.httpPort}`);
-      console.log(`📡 Studio plugin should connect to: http://localhost:${this.httpPort}`);
-      console.log(`🧪 Test tools at: http://localhost:${this.httpPort}/test-tool`);
-      console.log(`❤️  Health check: http://localhost:${this.httpPort}/health`);
+    const httpServer = this.app.listen(this.config.server.port, '0.0.0.0', () => {
+      console.log(`🚀 HTTP-Only Studio Server running on port ${this.config.server.port}`);
+      console.log(`📡 Studio plugin should connect to: http://${this.config.server.host}:${this.config.server.port}`);
+      console.log(`🧪 Test tools at: http://${this.config.server.host}:${this.config.server.port}/test-tool`);
+      console.log(`❤️  Health check: http://${this.config.server.host}:${this.config.server.port}${this.config.server.endpoints.health}`);
       console.log('');
       console.log('🎯 Ready for testing! Server will stay running...');
     });

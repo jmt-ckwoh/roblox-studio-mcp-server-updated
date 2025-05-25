@@ -11,27 +11,10 @@ import express from 'express';
 import { EventEmitter } from 'events';
 import { v4 as uuidv4 } from 'uuid';
 import cors from 'cors';
+import { StudioCommand, StudioResponse, ResponseChannel, validateStudioResponse } from '../shared/studio-protocol.js';
+import { DEFAULT_STUDIO_CONFIG, validateConfig } from '../shared/studio-config.js';
 
-// Types for Studio communication
-interface StudioCommand {
-  id: string;
-  tool: string;
-  args: any;
-  timestamp: number;
-}
-
-interface StudioResponse {
-  id: string;
-  response: string;
-  success: boolean;
-  error?: string;
-}
-
-interface ResponseChannel {
-  resolve: (response: string) => void;
-  reject: (error: string) => void;
-  timeout: NodeJS.Timeout;
-}
+// Types imported from shared definitions - no local duplicates
 
 // Server state management
 class StudioMCPServer {
@@ -40,9 +23,11 @@ class StudioMCPServer {
   private commandQueue: StudioCommand[] = [];
   private responseChannels: Map<string, ResponseChannel> = new Map();
   private queueEmitter: EventEmitter = new EventEmitter();
-  private httpPort: number = 44755; // Same port as Rust server
+  private config = DEFAULT_STUDIO_CONFIG;
   
   constructor() {
+    validateConfig(this.config);
+    
     this.app = express();
     this.mcpServer = new Server(
       {
@@ -65,12 +50,12 @@ class StudioMCPServer {
     this.app.use(express.json({ limit: '10mb' }));
     
     // Health check
-    this.app.get('/health', (req, res) => {
+    this.app.get(this.config.server.endpoints.health, (req, res) => {
       res.json({ status: 'ok', timestamp: new Date().toISOString() });
     });
 
     // Studio plugin polls this for commands (long polling)
-    this.app.get('/request', (req, res) => {
+    this.app.get(this.config.server.endpoints.request, (req, res) => {
       const command = this.commandQueue.shift();
       
       if (command) {
@@ -78,11 +63,11 @@ class StudioMCPServer {
         return;
       }
 
-      // Long polling - wait up to 15 seconds for new command
+      // Long polling - wait up to configured timeout for new command
       const timeout = setTimeout(() => {
         this.queueEmitter.off('newCommand', commandHandler);
         res.status(423).json({ error: 'No commands available' }); // 423 LOCKED (matches Rust server)
-      }, 15000);
+      }, this.config.timeouts.pollTimeout);
 
       const commandHandler = () => {
         clearTimeout(timeout);
@@ -98,8 +83,8 @@ class StudioMCPServer {
     });
 
     // Studio plugin sends execution results here
-    this.app.post('/response', (req, res) => {
-      const { id, response, success, error }: StudioResponse = req.body;
+    this.app.post(this.config.server.endpoints.response, (req, res) => {
+      const { id, result, success, error }: StudioResponse = req.body;
       
       if (!id) {
         res.status(400).json({ error: 'Missing response ID' });
@@ -112,7 +97,7 @@ class StudioMCPServer {
         this.responseChannels.delete(id);
         
         if (success) {
-          channel.resolve(response);
+          channel.resolve(result || '');
         } else {
           channel.reject(error || 'Studio execution failed');
         }
@@ -189,12 +174,48 @@ class StudioMCPServer {
             }]
           };
           
+        case 'get_workspace_files':
+          const filesResponse = await this.executeStudioCommand('GetWorkspaceFiles', args || {});
+          return {
+            content: [{
+              type: 'text' as const,
+              text: filesResponse
+            }]
+          };
+          
+        case 'get_file_content':
+          const contentResponse = await this.executeStudioCommand('GetFileContent', args || {});
+          return {
+            content: [{
+              type: 'text' as const,
+              text: contentResponse
+            }]
+          };
+          
+        case 'update_file_content':
+          const updateResponse = await this.executeStudioCommand('UpdateFileContent', args || {});
+          return {
+            content: [{
+              type: 'text' as const,
+              text: updateResponse
+            }]
+          };
+          
         case 'create_gui':
           const guiResponse = await this.executeStudioCommand('CreateGUI', args || {});
           return {
             content: [{
               type: 'text' as const,
               text: guiResponse
+            }]
+          };
+          
+        case 'get_console_output':
+          const consoleResponse = await this.executeStudioCommand('GetConsoleOutput', args || {});
+          return {
+            content: [{
+              type: 'text' as const,
+              text: consoleResponse
             }]
           };
           
@@ -279,6 +300,93 @@ class StudioMCPServer {
             }
           },
           {
+            name: 'get_workspace_files',
+            description: 'List all scripts and modules in the workspace for file management',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                filter_type: {
+                  type: 'string',
+                  enum: ['Script', 'LocalScript', 'ModuleScript', 'all'],
+                  description: 'Filter by script type',
+                  default: 'all'
+                },
+                include_disabled: {
+                  type: 'boolean',
+                  description: 'Include disabled scripts',
+                  default: false
+                },
+                max_depth: {
+                  type: 'number',
+                  description: 'Maximum depth to scan',
+                  default: 10
+                },
+                start_path: {
+                  type: 'string',
+                  description: 'Starting path for scan',
+                  default: 'Workspace'
+                }
+              }
+            }
+          },
+          {
+            name: 'get_file_content',
+            description: 'Read the source code content of a specific script or module',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                file_path: {
+                  type: 'string',
+                  description: 'Path to the script/module file'
+                },
+                include_metadata: {
+                  type: 'boolean',
+                  description: 'Include metadata like type and description',
+                  default: true
+                },
+                line_numbers: {
+                  type: 'boolean',
+                  description: 'Include line numbers in output',
+                  default: false
+                }
+              },
+              required: ['file_path']
+            }
+          },
+          {
+            name: 'update_file_content',
+            description: 'Edit or replace the content of a script or module with change tracking',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                file_path: {
+                  type: 'string',
+                  description: 'Path to the script/module file to update'
+                },
+                new_content: {
+                  type: 'string',
+                  description: 'New source code content'
+                },
+                change_description: {
+                  type: 'string',
+                  description: 'Description of changes for undo history',
+                  default: 'Update script content'
+                },
+                create_undo_point: {
+                  type: 'boolean',
+                  description: 'Create undo waypoint',
+                  default: true
+                },
+                validate_syntax: {
+                  type: 'boolean',
+                  description: 'Validate Luau syntax before applying',
+                  default: true
+                }
+              },
+              required: ['file_path', 'new_content']
+            }
+          },
+          {
             name: 'create_gui',
             description: 'Create GUI elements in Studio PlayerGui',
             inputSchema: {
@@ -303,6 +411,42 @@ class StudioMCPServer {
               },
               required: ['componentType']
             }
+          },
+          {
+            name: 'get_console_output',
+            description: 'Capture and filter console output from Roblox Studio for debugging',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                context: {
+                  type: 'string',
+                  enum: ['server', 'client', 'both'],
+                  description: 'Output context to capture',
+                  default: 'both'
+                },
+                log_level: {
+                  type: 'string',
+                  enum: ['all', 'output', 'warning', 'error'],
+                  description: 'Filter by log level',
+                  default: 'all'
+                },
+                max_lines: {
+                  type: 'number',
+                  description: 'Maximum number of log entries to return',
+                  default: 100,
+                  minimum: 1,
+                  maximum: 500
+                },
+                since_timestamp: {
+                  type: 'number',
+                  description: 'Only return logs after this timestamp'
+                },
+                filter_pattern: {
+                  type: 'string',
+                  description: 'Regex pattern to filter log messages'
+                }
+              }
+            }
           }
         ]
       };
@@ -326,8 +470,8 @@ class StudioMCPServer {
     return new Promise<string>((resolve, reject) => {
       const timeout = setTimeout(() => {
         this.responseChannels.delete(commandId);
-        reject(new Error('Studio command timeout (30 seconds)'));
-      }, 30000);
+        reject(new Error(`Studio command timeout (${this.config.timeouts.commandTimeout}ms)`));
+      }, this.config.timeouts.commandTimeout);
 
       this.responseChannels.set(commandId, {
         resolve,
@@ -339,8 +483,8 @@ class StudioMCPServer {
 
   async start() {
     // Start HTTP server
-    const httpServer = this.app.listen(this.httpPort, () => {
-      console.log(`Studio MCP HTTP server running on port ${this.httpPort}`);
+    const httpServer = this.app.listen(this.config.server.port, () => {
+      console.log(`Studio MCP HTTP server running on port ${this.config.server.port}`);
     });
 
     // Start MCP server with stdio transport

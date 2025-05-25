@@ -148,7 +148,10 @@ end
 -- Tool handler function
 local function handleManageDatastore(args)
 	if not args then
-		error("ManageDatastore requires arguments")
+		return {
+			success = false,
+			error = "ManageDatastore requires arguments"
+		}
 	end
 	
 	local operation = args.operation
@@ -159,19 +162,31 @@ local function handleManageDatastore(args)
 	
 	-- Validate required parameters
 	if not operation then
-		error("Missing 'operation' parameter")
+		return {
+			success = false,
+			error = "Missing 'operation' parameter"
+		}
 	end
 	
 	if not datastoreName then
-		error("Missing 'datastoreName' parameter")
+		return {
+			success = false,
+			error = "Missing 'datastoreName' parameter"
+		}
 	end
 	
 	if not key then
-		error("Missing 'key' parameter")
+		return {
+			success = false,
+			error = "Missing 'key' parameter"
+		}
 	end
 	
 	if operation == "write" and data == nil then
-		error("Write operation requires 'data' parameter")
+		return {
+			success = false,
+			error = "Write operation requires 'data' parameter"
+		}
 	end
 	
 	print(string.format("[MCP ManageDatastore] %s operation on '%s' key '%s'", 
@@ -180,30 +195,33 @@ local function handleManageDatastore(args)
 	local result = performDataStoreOperation(operation, datastoreName, key, data, scope)
 	
 	if result.success then
-		local output = "✅ DataStore " .. operation .. " successful:\n"
-		output = output .. "• DataStore: " .. datastoreName .. "\n"
-		output = output .. "• Key: " .. key .. "\n"
-		output = output .. "• Scope: " .. scope .. "\n"
-		output = output .. "• Message: " .. result.message .. "\n"
-		
-		if operation == "read" and result.data then
-			output = output .. "• Data: " .. result.data .. "\n"
-			output = output .. "• Type: " .. (result.dataType or "unknown") .. "\n"
-		elseif operation == "write" then
-			output = output .. "• Saved data: " .. tostring(data) .. "\n"
-		elseif operation == "list" and result.data then
-			output = output .. "• Keys found: " .. result.totalKeys .. "\n"
-			output = output .. "• Keys: " .. table.concat(result.data, ", ") .. "\n"
-		elseif operation == "delete" and result.previousValue then
-			output = output .. "• Previous value: " .. result.previousValue .. "\n"
-		end
-		
-		return output
+		return {
+			success = true,
+			result = {
+				operation = operation,
+				datastore_name = datastoreName,
+				key = key,
+				scope = scope,
+				message = result.message,
+				data = result.data,
+				data_type = result.dataType,
+				total_keys = result.totalKeys,
+				previous_value = result.previousValue,
+				timestamp = tick()
+			}
+		}
 	else
-		return "❌ DataStore " .. operation .. " failed:\n" ..
-			"• DataStore: " .. datastoreName .. "\n" ..
-			"• Key: " .. key .. "\n" ..
-			"• Error: " .. result.message
+		return {
+			success = false,
+			error = result.message,
+			result = {
+				operation = operation,
+				datastore_name = datastoreName,
+				key = key,
+				scope = scope,
+				timestamp = tick()
+			}
+		}
 	end
 end
 

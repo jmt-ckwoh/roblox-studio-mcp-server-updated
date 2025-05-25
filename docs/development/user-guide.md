@@ -1,7 +1,7 @@
 # MCP Claude User Guide - Roblox Studio Integration
 
 ## Overview
-This MCP server provides direct control of Roblox Studio through 6 tools. It uses HTTP polling architecture where Studio plugin polls the TypeScript server for commands.
+This MCP server provides direct control of Roblox Studio through 9 tools, including comprehensive file management capabilities. It uses HTTP polling architecture where Studio plugin polls the TypeScript server for commands.
 
 ## Architecture
 - **TypeScript MCP Server**: Runs on port 3000, handles MCP protocol via stdio
@@ -16,7 +16,34 @@ This MCP server provides direct control of Roblox Studio through 6 tools. It use
 
 ## Available Tools
 
-### ✅ Working Tools (4/6)
+### ✅ Fully Working Tools (7/9)
+
+#### **File Management Tools** (M1.4 - NEW)
+
+#### `get_workspace_files`
+- **Purpose**: Discover all scripts and modules in the Studio project
+- **Args**: `{ filter_type?: "Script"|"LocalScript"|"ModuleScript"|"all", include_disabled?: boolean, max_depth?: number, start_path?: string }`
+- **Returns**: Array of file objects with full paths, types, and metadata
+- **Example**: Returns 15 scripts across ServerScriptService, StarterPlayer, ReplicatedStorage
+- **Use Case**: Project analysis, dependency discovery, code navigation
+
+#### `get_file_content`
+- **Purpose**: Read source code of any script or module with metadata
+- **Args**: `{ file_path: string, include_metadata?: boolean, line_numbers?: boolean }`
+- **Returns**: Full source code, line count, type, and metadata
+- **Example**: Reads 481-line LocalScript with complete source code
+- **Path Format**: Use full paths like "StarterPlayer.StarterPlayerScripts.ScriptName"
+- **Use Case**: Code analysis, understanding existing implementations
+
+#### `update_file_content`
+- **Purpose**: Edit script content with change history integration
+- **Args**: `{ file_path: string, new_content: string, change_description?: string, create_undo_point?: boolean, validate_syntax?: boolean }`
+- **Returns**: Success confirmation, change ID, syntax validation results
+- **Features**: Studio undo/redo integration, Luau syntax validation, change tracking
+- **Studio Note**: Close/reopen script tabs to see changes in Studio editor
+- **Use Case**: AI-assisted code modification, automated refactoring
+
+#### **Studio Control Tools**
 
 #### `get_workspace`
 - **Purpose**: Analyze Roblox workspace hierarchy and objects
@@ -42,7 +69,7 @@ This MCP server provides direct control of Roblox Studio through 6 tools. It use
 - **Returns**: GUI element location and properties
 - **Note**: Creates in temporary parent in Studio (no LocalPlayer)
 
-### ❌ Partially Working Tools (2/6)
+### ❌ Partially Working Tools (2/9)
 
 #### `run_code`
 - **Purpose**: Execute Luau code in Studio with output capture
@@ -58,24 +85,51 @@ This MCP server provides direct control of Roblox Studio through 6 tools. It use
 
 ## Usage Patterns
 
-### Workspace Analysis
+### **Cursor/AI Development Workflow** (M1.4)
+
+#### Project Discovery & Analysis
+```
+1. get_workspace_files - Discover all scripts in project
+2. get_file_content - Read specific scripts to understand codebase
+3. Analysis: AI analyzes patterns, dependencies, architecture
+```
+
+#### Code Modification & Refactoring
+```
+1. get_workspace_files - Find scripts to modify
+2. get_file_content - Read current implementation  
+3. update_file_content - Apply AI-generated improvements
+4. Studio: Close/reopen script tabs to see changes
+```
+
+#### Debugging & Investigation
+```
+1. get_workspace_files - Find relevant scripts
+2. get_file_content - Read problematic code
+3. get_workspace - Understand current Studio state
+4. update_file_content - Apply fixes with change tracking
+```
+
+### **Traditional Studio Control**
+
+#### Workspace Analysis
 ```
 Use get_workspace to understand current Studio environment before making changes
 ```
 
-### Object Creation
+#### Object Creation
 ```
 1. get_workspace - See current objects
 2. create_part - Add new parts with specific properties
 3. get_workspace - Verify changes
 ```
 
-### Model Integration
+#### Model Integration
 ```
 insert_model with search terms to add complex pre-built models
 ```
 
-### GUI Development
+#### GUI Development
 ```
 create_gui to build user interface elements
 ```
@@ -115,6 +169,13 @@ create_gui to build user interface elements
 - Some tools create temporary objects for testing
 
 ## Current Limitations
+
+### File Management (M1.4)
+- **Fuzzy path search**: Only full paths work reliably (e.g., "StarterPlayer.StarterPlayerScripts.ScriptName")
+- **Studio UI refresh**: Must close/reopen script tabs to see external file changes
+- **Syntax validation**: Basic Lua validation only, not full Luau type checking
+
+### Other Tools
 - run_code and manage_datastore have response parsing issues (tools work, server errors)
 - GUI creation uses temporary parent in Studio environment
 - DataStore operations require proper Roblox permissions
@@ -122,6 +183,7 @@ create_gui to build user interface elements
 
 ## Integration Notes
 - Server must run continuously for tools to work
-- Plugin automatically loads tools: CreateGUI, CreatePart, GetWorkspace, InsertModel, ManageDatastore, RunCode
-- All changes appear immediately in Studio
+- Plugin automatically loads tools: CreateGUI, CreatePart, GetWorkspace, InsertModel, ManageDatastore, RunCode, GetWorkspaceFiles, GetFileContent, UpdateFileContent
+- All changes appear immediately in Studio (except script editor display)
 - Tools support undo/redo through Studio ChangeHistoryService
+- File operations integrate with Studio change history for professional workflow

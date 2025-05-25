@@ -1,6 +1,34 @@
-## Overview
+# Roblox MCP Server
 
 This MCP server provides specialized resources, tools, and prompts for Roblox Studio development. It allows LLM applications to access Roblox Studio documentation, templates, code generation capabilities, and other features through a standardized interface.
+
+## 📁 Project Structure
+
+```
+├── src/                    # Source code
+├── studio-plugin/          # Roblox Studio plugin
+├── docs/                   # All documentation
+│   ├── architecture/       # Technical architecture docs
+│   ├── development/        # Development guides
+│   └── milestones/         # Project milestones
+├── tests/                  # Testing suites
+│   ├── integration/        # Integration tests
+│   ├── validation/         # Milestone validation
+│   └── performance/        # Load testing
+├── project-management/     # Planning & process tracking
+│   ├── memory/             # Session memory
+│   └── logs/               # Historical logs
+├── scripts/                # Build & utility scripts
+└── temp/                   # Temporary files
+```
+
+## 📚 Documentation
+
+- **[Architecture Overview](docs/architecture/overview.md)** - System design and architecture
+- **[Studio Integration](docs/architecture/studio-integration.md)** - Plugin integration details
+- **[Development Guide](docs/development/user-guide.md)** - Getting started guide
+- **[Implementation Status](docs/development/implementation-status.md)** - Current feature status
+- **[Prioritized Backlog](docs/milestones/prioritized-backlog.md)** - Development roadmap
 
 ## Recent Updates (May 2025)
 
